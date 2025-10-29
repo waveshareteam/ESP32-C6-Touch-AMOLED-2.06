@@ -1,6 +1,6 @@
 # Waveshare ESP32-C6-Touch-AMOLED-2.06 Product Engineering Sample Program
 
-ESP32-C6-Touch-AMOLED-2.06 ESP32-C6 2.06inch AMOLED Touch Watch Development Board, 3410×502 Pixels, QSPI Interface, Onboard Dual Digital Microphones Array, ESP32 With Display
+ESP32-C6-Touch-AMOLED-2.06 ESP32-C6 2.06inch AMOLED Touch Watch Development Board, 410×502 Pixels, QSPI Interface, Onboard Dual Digital Microphones Array, ESP32 With Display
 
 ---
 
