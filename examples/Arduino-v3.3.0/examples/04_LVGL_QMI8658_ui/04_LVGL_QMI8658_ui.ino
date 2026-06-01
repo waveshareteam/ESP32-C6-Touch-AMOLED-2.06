@@ -16,6 +16,7 @@ uint32_t screenHeight;
 uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
+bool lvgl_ready = false;
 
 SensorQMI8658 qmi;
 
@@ -28,7 +29,7 @@ lv_chart_series_t *acc_series_x;  // Acceleration X series
 lv_chart_series_t *acc_series_y;  // Acceleration Y series
 lv_chart_series_t *acc_series_z;  // Acceleration Z series
 
-#define DIRECT_RENDER_MODE
+// #define DIRECT_RENDER_MODE
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS /* CS */, LCD_SCLK /* SCK */, LCD_SDIO0 /* SDIO0 */, LCD_SDIO1 /* SDIO1 */,
@@ -81,11 +82,11 @@ void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
 
 /*Read the touchpad*/
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
-  int32_t touchX = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
-  int32_t touchY = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
-
   if (FT3168->IIC_Interrupt_Flag == true) {
     FT3168->IIC_Interrupt_Flag = false;
+    int32_t touchX = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
+    int32_t touchY = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
+
     data->state = LV_INDEV_STATE_PR;
 
     /*Set the coordinates*/
@@ -104,18 +105,20 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
 
 void rounder_event_cb(lv_event_t *e) {
   lv_area_t *area = (lv_area_t *)lv_event_get_param(e);
-  uint16_t x1 = area->x1;
-  uint16_t x2 = area->x2;
 
-  uint16_t y1 = area->y1;
-  uint16_t y2 = area->y2;
+  // CO5300 QSPI partial-width updates can leave artifacts at the left edge.
+  // Refresh full-width strips while keeping the small partial render buffer.
+  area->x1 = 0;
+  area->x2 = (int32_t)screenWidth - 1;
+  area->y1 &= ~0x1;
+  area->y2 |= 0x1;
 
-  // round the start of coordinate down to the nearest 2M number
-  area->x1 = (x1 >> 1) << 1;
-  area->y1 = (y1 >> 1) << 1;
-  // round the end of coordinate up to the nearest 2N+1 number
-  area->x2 = ((x2 >> 1) << 1) + 1;
-  area->y2 = ((y2 >> 1) << 1) + 1;
+  if (area->y1 < 0) {
+    area->y1 = 0;
+  }
+  if (area->y2 >= (int32_t)screenHeight) {
+    area->y2 = (int32_t)screenHeight - 1;
+  }
 }
 
 void setup() {
@@ -193,6 +196,11 @@ void setup() {
     USBSerial.println("LVGL disp_draw_buf allocate failed!");
   } else {
     disp = lv_display_create(screenWidth, screenHeight);
+    if (!disp) {
+      USBSerial.println("LVGL display create failed!");
+      return;
+    }
+
     lv_display_set_flush_cb(disp, my_disp_flush);
 #ifdef DIRECT_RENDER_MODE
     lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
@@ -218,6 +226,7 @@ void setup() {
     acc_series_x = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     acc_series_y = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_GREEN), LV_CHART_AXIS_PRIMARY_Y);
     acc_series_z = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_BLUE), LV_CHART_AXIS_PRIMARY_Y);
+    lvgl_ready = true;
 
     // lv_demo_widgets();
     // lv_demo_benchmark();
@@ -230,6 +239,11 @@ void setup() {
 }
 
 void loop() {
+  if (!lvgl_ready) {
+    delay(1000);
+    return;
+  }
+
   lv_task_handler(); /* let the GUI do its work */
 
 #ifdef DIRECT_RENDER_MODE
