@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: ">=5.5.0"
+  cube32esp/xpowerslib:
+    version: "^0.3.3"
+    public: true

@@ -1,0 +1,16 @@
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# ESP-IDF and Arduino build output
+**/build/
+**/sdkconfig
+**/sdkconfig.old
+**/managed_components/
+*.elf
+*.map
+
+# CI-created release bundles
+/release-artifacts/

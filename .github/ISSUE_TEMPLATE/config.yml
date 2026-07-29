@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Product documentation
+    url: https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-2.06
+    about: Setup instructions, downloads, and hardware documentation
+  - name: Order and warranty support
+    url: https://www.waveshare.com/contact_us
+    about: Use the official support channel for private order or warranty questions

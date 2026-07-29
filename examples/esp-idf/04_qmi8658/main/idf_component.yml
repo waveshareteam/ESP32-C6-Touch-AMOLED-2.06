@@ -1,0 +1,12 @@
+## IDF Component Manager Manifest File
+dependencies:
+  ## Required IDF version
+  idf: ">=5.5.0"
+
+  waveshare/qmi8658:
+    version: "^2.0.0"
+  waveshare/esp32_c6_touch_amoled_2_06:
+    version: "^2.0.0"
+  lvgl/lvgl:
+    version: "9.5.0"
+    public: true

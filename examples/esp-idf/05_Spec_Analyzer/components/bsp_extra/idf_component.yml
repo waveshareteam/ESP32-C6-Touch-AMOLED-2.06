@@ -1,0 +1,19 @@
+dependencies:
+  lvgl/lvgl:
+    version: "9.5.0"
+  idf:
+    version: ">=5.3.2"
+
+  waveshare/esp32_c6_touch_amoled_2_06:
+    version: "^2.0.0"
+
+  chmorgan/esp-audio-player:
+    version: "^1.1.0"
+    public: true
+
+  chmorgan/esp-file-iterator:
+    version: "^1.0.0"
+    public: true
+
+description: Project-specific audio extension for ESP32-C6-Touch-AMOLED-2.06
+version: 0.0.2

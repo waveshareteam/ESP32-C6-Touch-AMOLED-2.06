@@ -1,0 +1,79 @@
+# Firmware artifacts and flashing
+
+There are two distinct firmware sources in this repository.
+
+1. `firmware/` contains a factory-provided image retained for recovery or reference.
+2. GitHub Actions artifacts are generated from the current source after a successful
+   ESP-IDF or Arduino build.
+
+The factory image is never rediscovered, rebuilt, or uploaded as a source-build
+artifact.
+
+## CI artifact contents
+
+Each source-build ZIP contains:
+
+```text
+bin/                    Application and supporting binaries
+manifest.json           Board, framework, source revision, offsets, sizes, hashes
+flash.sh                POSIX shell flashing helper
+flash.bat               Windows command prompt flashing helper
+metadata/               Framework metadata when available (ESP-IDF bundles)
+```
+
+The manifest records the ESP32-C6 target, framework version, repository-relative
+source project, Git commit SHA, generation time, flash command, file sizes, and
+SHA-256 hashes.
+
+## Prerequisites
+
+- A data-capable USB cable and a visible serial port
+- Python 3
+- Espressif's `esptool` package
+
+Install the flashing tool in an isolated Python environment:
+
+```sh
+python -m pip install esptool
+```
+
+## Flash a CI bundle
+
+1. Download the artifact for the desired example and framework version.
+2. Extract the ZIP completely.
+3. Put the board into download mode if automatic reset does not do so.
+4. Run the helper from the extracted directory.
+
+On Linux or macOS:
+
+```sh
+./flash.sh --port /dev/ttyACM0
+```
+
+On Windows Command Prompt:
+
+```bat
+flash.bat --port COM5
+```
+
+The generated helpers contain the exact binary offsets. If a port argument is
+needed, either add it to the `python -m esptool` command shown in `manifest.json` or
+edit the helper before running it. Erasing flash first is optional and destructive;
+back up device-specific data before doing so.
+
+## Factory image
+
+See [firmware/README.md](../firmware/README.md) before using the factory image. A
+factory image may contain a different application, partition table, or device setup
+than the source examples. Do not combine offsets from a CI bundle with factory
+binary files.
+
+## Packaging implementation
+
+`releases/package_firmware.py` consumes ESP-IDF `flasher_args.json` or Arduino CLI
+exported binaries. It creates separate per-project, per-framework-version ZIPs only
+after the source build succeeds. Unit tests use synthetic binaries and do not build
+firmware.
+
+Generated ZIP files belong in CI artifacts or an intentional GitHub release; they
+are not committed to the source tree.
