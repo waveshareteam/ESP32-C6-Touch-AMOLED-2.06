@@ -197,6 +197,14 @@ class RoutingTests(unittest.TestCase):
                 "ci_router_fixed\n",
             )
 
+    def test_github_unknown_path_summary_is_bounded(self) -> None:
+        paths = [f"legacy/path-{index}.dat" for index in range(25)]
+        visible, count, truncated = router.github_path_summary(paths)
+        self.assertEqual(count, 25)
+        self.assertTrue(truncated)
+        self.assertEqual(visible.splitlines(), paths[: router.SUMMARY_PATH_LIMIT])
+        self.assertNotIn(paths[-1], visible)
+
     def test_exact_docs_only_cli_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             changed = Path(temporary_directory) / "changed.txt"
@@ -244,6 +252,10 @@ class RoutingTests(unittest.TestCase):
             self.assertNotIn("--fallback-all", workflow)
             self.assertNotIn("    paths:", workflow)
             self.assertIn("SELECTED_EXAMPLES: ${{ steps.examples.outputs.examples }}", workflow)
+            self.assertIn(
+                "UNKNOWN_PATH_COUNT: ${{ steps.examples.outputs.unknown_path_count }}",
+                workflow,
+            )
             self.assertNotIn("echo '${{ steps.examples.outputs.examples }}'", workflow)
         self.assertIn(
             "check_markdown.py --all --config config/markdown-audit.json",

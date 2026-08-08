@@ -31,6 +31,8 @@ jobs:
       firmware_touched: ${{ steps.examples.outputs.firmware_touched }}
       release_review_required: ${{ steps.examples.outputs.release_review_required }}
       unknown_paths: ${{ steps.examples.outputs.unknown_paths }}
+      unknown_path_count: ${{ steps.examples.outputs.unknown_path_count }}
+      unknown_paths_truncated: ${{ steps.examples.outputs.unknown_paths_truncated }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,6 +79,8 @@ jobs:
           FIRMWARE_TOUCHED: ${{ steps.examples.outputs.firmware_touched }}
           RELEASE_REVIEW_REQUIRED: ${{ steps.examples.outputs.release_review_required }}
           UNKNOWN_PATHS: ${{ steps.examples.outputs.unknown_paths }}
+          UNKNOWN_PATH_COUNT: ${{ steps.examples.outputs.unknown_path_count }}
+          UNKNOWN_PATHS_TRUNCATED: ${{ steps.examples.outputs.unknown_paths_truncated }}
         run: |
           if [[ "$HAS_EXAMPLES" == "true" ]]; then
             {
@@ -93,11 +97,15 @@ jobs:
             printf 'Firmware surface touched: %s\n' "${FIRMWARE_TOUCHED:-n/a}"
             printf 'Release review required: %s\n' "${RELEASE_REVIEW_REQUIRED:-n/a}"
           } >> "$GITHUB_STEP_SUMMARY"
-          if [[ -n "$UNKNOWN_PATHS" ]]; then
+          if [[ "${UNKNOWN_PATH_COUNT:-0}" != "0" ]]; then
             {
               echo
-              echo "Unknown paths:"
+              printf 'Unknown paths (showing up to %s of %s):\n' \
+                "${SUMMARY_PATH_LIMIT:-20}" "$UNKNOWN_PATH_COUNT"
               printf '%s\n' "$UNKNOWN_PATHS" | sed '/^$/d; s/^/- /'
+              if [[ "$UNKNOWN_PATHS_TRUNCATED" == "true" ]]; then
+                echo "- Additional paths omitted; inspect the routing step JSON."
+              fi
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 

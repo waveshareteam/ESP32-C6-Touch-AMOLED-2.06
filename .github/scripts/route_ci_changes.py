@@ -25,6 +25,7 @@ from typing import Iterable
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 ZERO_SHA_RE = re.compile(r"^0{40,64}$")
+SUMMARY_PATH_LIMIT = 20
 TOOLCHAINS = json.loads(
     (REPO_ROOT / "config/toolchains.json").read_text(encoding="utf-8")
 )
@@ -482,6 +483,14 @@ def github_output(name: str, value: str) -> None:
             output.write(f"{name}<<{delimiter}\n{value}\n{delimiter}\n")
 
 
+def github_path_summary(paths: list[str]) -> tuple[str, int, bool]:
+    return (
+        "\n".join(paths[:SUMMARY_PATH_LIMIT]),
+        len(paths),
+        len(paths) > SUMMARY_PATH_LIMIT,
+    )
+
+
 def report(result: RoutingResult, framework: str) -> dict[str, object]:
     selected = (
         result.idf_examples if framework == "esp-idf" else result.arduino_examples
@@ -546,7 +555,15 @@ def main() -> int:
         "release_review_required",
         "true" if result.release_review_required else "false",
     )
-    github_output("unknown_paths", "\n".join(result.unknown_paths))
+    unknown_paths, unknown_path_count, unknown_paths_truncated = github_path_summary(
+        result.unknown_paths
+    )
+    github_output("unknown_paths", unknown_paths)
+    github_output("unknown_path_count", str(unknown_path_count))
+    github_output(
+        "unknown_paths_truncated",
+        "true" if unknown_paths_truncated else "false",
+    )
 
     if args.format == "json":
         print(json.dumps(payload, indent=2))
