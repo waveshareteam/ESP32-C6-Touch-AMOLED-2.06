@@ -1,5 +1,7 @@
 # Component policy
 
+[简体中文](components_ZH.md)
+
 Prefer the Espressif Component Registry for reusable ESP-IDF dependencies. Keep a
 component local only when it contains project-specific integration or when a safe
 registry replacement has not been established.
@@ -41,6 +43,11 @@ kept explicit.
 BSP to application-specific audio and file-iteration behavior. It remains local
 because moving it into the shared board BSP would change upstream board-component
 scope.
+
+The published board BSP owns the shared `BSP_I2S_NUM` Kconfig symbol. The local
+extension therefore does not redefine that symbol. Its CMake dependency list selects
+the split GPIO, I2C, I2S, and LEDC driver components on ESP-IDF 5.5 and newer while
+retaining the legacy aggregate dependency for the older manifest-supported line.
 
 ## Arduino libraries
 

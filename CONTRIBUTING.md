@@ -1,5 +1,7 @@
 # Contributing
 
+[简体中文](CONTRIBUTING_ZH.md)
+
 Thank you for improving the ESP32-C6-Touch-AMOLED-2.06 examples.
 
 ## Before opening a pull request

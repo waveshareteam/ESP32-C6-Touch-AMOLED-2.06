@@ -6,6 +6,14 @@ list(APPEND SRCS
 set(INCLUDE_DIRS "")
 list(APPEND INCLUDE_DIRS "include")
 
+if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.5")
+    set(BSP_EXTRA_REQUIRES esp_driver_gpio esp_driver_i2s)
+    set(BSP_EXTRA_PRIV_REQUIRES esp_driver_i2c esp_driver_ledc)
+else()
+    set(BSP_EXTRA_REQUIRES driver)
+    set(BSP_EXTRA_PRIV_REQUIRES "")
+endif()
+
 foreach(SRC_DIR IN LISTS SRC_DIRS)
     file(GLOB_RECURSE SRC ${SRC_DIR}/*.c)
     list(APPEND SRCS ${SRC})
@@ -15,8 +23,8 @@ endforeach()
 idf_component_register(
     SRCS ${SRCS}
     INCLUDE_DIRS ${INCLUDE_DIRS}
-    REQUIRES driver esp_driver_gpio esp_driver_ledc esp_driver_i2s
-    PRIV_REQUIRES esp_timer fatfs esp_psram esp_mm esp_driver_gpio esp_driver_ledc esp_driver_i2s
+    REQUIRES ${BSP_EXTRA_REQUIRES}
+    PRIV_REQUIRES ${BSP_EXTRA_PRIV_REQUIRES} esp_timer fatfs esp_psram esp_mm
 )
 
 target_compile_options(

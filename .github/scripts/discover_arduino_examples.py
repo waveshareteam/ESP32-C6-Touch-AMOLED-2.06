@@ -4,11 +4,9 @@
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -20,26 +18,6 @@ EXAMPLE_ROOT = Path("examples/arduino")
 ARDUINO_CORE_VERSION = str(TOOLCHAINS["arduino_core_version"])
 ARDUINO_FQBN = str(TOOLCHAINS["arduino_fqbn"])
 BOARD_MANAGER_URL = str(TOOLCHAINS["arduino_board_manager_url"])
-GLOBAL_PATTERNS = (
-    ".github/workflows/arduino-examples.yml",
-    ".github/scripts/discover_arduino_examples.py",
-    ".github/scripts/test_ci_tools.py",
-    "config/toolchains.json",
-    "examples/arduino/libraries/**",
-    "releases/package_firmware.py",
-)
-
-
-def run_git(args: list[str]) -> list[str]:
-    result = subprocess.run(
-        ["git", *args],
-        check=True,
-        text=True,
-        stdout=subprocess.PIPE,
-    )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
-
-
 def is_sketch(path: Path) -> bool:
     return path.is_dir() and (path / f"{path.name}.ino").is_file()
 
@@ -70,39 +48,6 @@ def normalize_example(value: str, known_examples: set[str]) -> str:
     return normalized
 
 
-def discover_from_paths(paths: list[str], known_examples: set[str]) -> list[str]:
-    selected: set[str] = set()
-    root_path = EXAMPLE_ROOT.as_posix()
-
-    for changed_path in paths:
-        changed_path = changed_path.strip().strip("/")
-        if any(fnmatch.fnmatch(changed_path, pattern) for pattern in GLOBAL_PATTERNS):
-            selected.update(known_examples)
-            continue
-
-        for example in known_examples:
-            if changed_path == example or changed_path.startswith(example + "/"):
-                selected.add(example)
-                break
-        else:
-            if changed_path == root_path or changed_path.startswith(root_path + "/"):
-                selected.update(known_examples)
-
-    return sorted(selected)
-
-
-def discover_changed_examples(
-    base_ref: str | None,
-    head_ref: str,
-    known_examples: set[str],
-) -> list[str]:
-    if base_ref:
-        diff_args = ["diff", "--name-only", f"{base_ref}...{head_ref}"]
-    else:
-        diff_args = ["diff-tree", "--no-commit-id", "--name-only", "-r", head_ref]
-    return discover_from_paths(run_git(diff_args), known_examples)
-
-
 def github_output(name: str, value: str) -> None:
     output_path = os.environ.get("GITHUB_OUTPUT")
     if output_path:
@@ -127,13 +72,10 @@ def build_matrix(selected: list[str]) -> dict[str, list[dict[str, str]]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base-ref")
-    parser.add_argument("--head-ref", default="HEAD")
-    parser.add_argument("--example", default="")
     parser.add_argument(
-        "--fallback-all",
-        action="store_true",
-        help="Build all sketches when no changed first-party sketch is detected.",
+        "--example",
+        default="all",
+        help="Manual sketch directory name, repository-relative path, or all.",
     )
     args = parser.parse_args()
 
@@ -144,7 +86,7 @@ def main() -> int:
         print(f"No first-party Arduino sketches found under {EXAMPLE_ROOT}", file=sys.stderr)
         return 1
 
-    if requested_example == "all":
+    if requested_example in {"", "all"}:
         selected = sorted(known_examples)
     elif requested_example:
         if requested_example not in known_examples:
@@ -154,11 +96,6 @@ def main() -> int:
                 print(f"  {example}", file=sys.stderr)
             return 1
         selected = [requested_example]
-    else:
-        selected = discover_changed_examples(args.base_ref, args.head_ref, known_examples)
-        if args.fallback_all and not selected:
-            selected = sorted(known_examples)
-
     matrix_json = json.dumps(build_matrix(selected), separators=(",", ":"))
     github_output("matrix", matrix_json)
     github_output("has_examples", "true" if selected else "false")

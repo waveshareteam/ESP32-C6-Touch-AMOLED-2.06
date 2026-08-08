@@ -1,5 +1,7 @@
 # Arduino examples
 
+[简体中文](README_ZH.md)
+
 The six direct child sketch directories are the product examples. The `libraries/`
 directory contains the library versions shipped with the board; examples nested
 inside those libraries are upstream reference material and are not part of the CI
@@ -45,7 +47,9 @@ The CI copy is temporary and is not committed.
 - `06_LVGL_Arduino_v9`
 
 Changing a sketch builds only that sketch. Changing a bundled library, the Arduino
-workflow, discovery logic, or firmware packager builds all six sketches.
+workflow, shared routing logic, or firmware packager builds all six sketches.
+Markdown-only changes select no firmware builds. Missing diff data fails closed
+instead of selecting a silent fallback matrix.
 
 Successful builds upload directly flashable ZIP artifacts. See
 [the firmware guide](../../docs/firmware.md).

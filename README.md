@@ -1,6 +1,8 @@
 <div align="center">
   <h1>ESP32-C6-Touch-AMOLED-2.06</h1>
   <p><strong>ESP32-C6 2.06-inch 410 × 502 QSPI AMOLED touch development board</strong></p>
+  <p><a href="README_ZH.md">简体中文</a></p>
+  <p><img src="https://www.waveshare.com/media/catalog/product/cache/1/image/560x560/9df78eab33525d08d6e5fb8d27136e95/e/s/esp32-c6-touch-amoled-2.06-1.jpg" alt="ESP32-C6-Touch-AMOLED-2.06" width="420"></p>
   <p>
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml"><img alt="ESP-IDF Examples" src="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml/badge.svg"></a>
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml"><img alt="Arduino Examples" src="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml/badge.svg"></a>
@@ -55,11 +57,11 @@ extracting the package and installing esptool with
 `python -m pip install esptool`, run one of the generated helpers:
 
 ```sh
-./flash.sh --port /dev/ttyACM0
+./flash.sh --port PORT
 ```
 
 ```bat
-flash.bat --port COM5
+flash.bat --port PORT
 ```
 
 > [!NOTE]
@@ -107,8 +109,10 @@ library examples are intentionally excluded from the product CI matrix.
 
 The separate [ESP-IDF](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml)
 and [Arduino](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml)
-workflows run two discovery jobs and 16 firmware build jobs. Each successful
-build is packaged as a flashable artifact. See
+workflows run two always-visible discovery jobs and up to 16 firmware build
+jobs. Documentation-only changes skip the firmware matrices while retaining
+the lightweight policy and routing checks. Each successful build is packaged
+as a flashable artifact. See
 [Continuous Integration](docs/ci.md) for matrix and dispatch details.
 
 The machine-readable source for toolchain versions and board options is

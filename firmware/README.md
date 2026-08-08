@@ -1,5 +1,7 @@
 # Factory firmware
 
+[简体中文](README_ZH.md)
+
 `ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin` is a factory-provided binary image.
 It is retained as supplied and is not produced from the examples in this repository.
 

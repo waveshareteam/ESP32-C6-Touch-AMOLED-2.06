@@ -36,6 +36,27 @@ def repo_relative(path: Path) -> str:
         return path.name
 
 
+def contained_path(root: Path, candidate: Path, description: str) -> Path:
+    resolved_root = root.resolve()
+    resolved_candidate = candidate.resolve()
+    try:
+        resolved_candidate.relative_to(resolved_root)
+    except ValueError as error:
+        raise ValueError(
+            f"{description} resolves outside {resolved_root}: {resolved_candidate}"
+        ) from error
+    return resolved_candidate
+
+
+def manifest_git_sha() -> str:
+    value = os.environ.get("GITHUB_SHA", "")
+    if os.environ.get("CI", "").lower() == "true" and not re.fullmatch(
+        r"[0-9a-fA-F]{40}", value
+    ):
+        raise ValueError("CI packaging requires a complete 40-character GITHUB_SHA")
+    return value or "unknown"
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -126,7 +147,7 @@ def build_manifest(
         "framework": framework,
         "framework_version": framework_version,
         "source_project": repo_relative(project),
-        "git_sha": os.environ.get("GITHUB_SHA", "unknown"),
+        "git_sha": manifest_git_sha(),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "flash": {
             "baud": DEFAULT_BAUD,
@@ -192,7 +213,11 @@ def package_esp_idf(
     for raw_offset, raw_path in sorted(
         flash_files.items(), key=lambda item: parse_offset(item[0])
     ):
-        source = (build_dir / str(raw_path)).resolve()
+        source = contained_path(
+            build_dir,
+            build_dir / str(raw_path),
+            "ESP-IDF flasher binary",
+        )
         if not source.is_file():
             raise FileNotFoundError(f"Referenced ESP-IDF binary not found: {source}")
         archive_name = unique_archive_name(source, used_names)
@@ -233,13 +258,21 @@ def package_arduino(
     output_dir: Path,
     fqbn: str,
 ) -> Path:
-    binaries = sorted(build_dir.rglob("*.bin"))
+    binaries = sorted(
+        contained_path(build_dir, path, "Arduino binary")
+        for path in build_dir.rglob("*.bin")
+    )
     if not binaries:
         raise FileNotFoundError(f"No Arduino binaries found under {build_dir}")
 
     merged = [path for path in binaries if "merged" in path.name.lower()]
     flash_offsets: dict[Path, str] = {}
     if merged:
+        if len(merged) != 1:
+            raise ValueError(
+                "Expected exactly one Arduino merged binary, found "
+                f"{len(merged)}"
+            )
         flash_offsets[merged[0]] = "0x0"
     else:
         special = {
@@ -259,8 +292,23 @@ def package_arduino(
             and "bootloader" not in path.name.lower()
             and "partitions" not in path.name.lower()
         ]
-        if app_candidates:
-            flash_offsets[max(app_candidates, key=lambda path: path.stat().st_size)] = "0x10000"
+        if not app_candidates:
+            raise ValueError("Arduino build output does not contain an application binary")
+        expected_names = {
+            f"{project.name}.bin",
+            f"{project.name}.ino.bin",
+        }
+        exact_app = [path for path in app_candidates if path.name in expected_names]
+        if len(exact_app) == 1:
+            application = exact_app[0]
+        elif len(app_candidates) == 1:
+            application = app_candidates[0]
+        else:
+            raise ValueError(
+                "Unable to choose one Arduino application binary from: "
+                + ", ".join(path.name for path in app_candidates)
+            )
+        flash_offsets[application] = "0x10000"
 
     used_names: set[str] = set()
     records: list[dict[str, object]] = []

@@ -1,5 +1,7 @@
 # Security policy
 
+[简体中文](SECURITY_ZH.md)
+
 ## Supported source
 
 Security fixes are applied to the default branch. Historical factory images and old
@@ -8,9 +10,10 @@ workflow artifacts are not independently maintained as security release lines.
 ## Reporting a vulnerability
 
 Do not open a public issue for a suspected vulnerability. Use GitHub private
-vulnerability reporting for this repository when it is available. Otherwise contact
-Waveshare through the official support channel linked from the product wiki and make
-it clear that the report contains security-sensitive details.
+vulnerability reporting only when the repository's **Security** tab displays a
+**Report a vulnerability** action. If that action is unavailable, contact
+Waveshare through the official support channel linked from the product wiki and
+request a private reporting channel before sending security-sensitive details.
 
 Include the affected example or component, source revision, impact, reproduction
 steps, and a minimal proof of concept. Do not include real credentials or personal

@@ -1,5 +1,7 @@
 # ESP-IDF examples
 
+[简体中文](README_ZH.md)
+
 These first-party applications target `esp32c6` and are built in CI with ESP-IDF
 v5.5.5 and v6.0.2.
 
@@ -37,8 +39,10 @@ for the board. It is not a duplicate of the published Waveshare board BSP.
 
 The discovery script selects only direct child projects of this directory that have
 both `CMakeLists.txt` and `main/`. Nested component test applications are therefore
-not mistaken for product examples. A workflow, packaging, or discovery change runs
-all five applications on both supported ESP-IDF versions.
+not mistaken for product examples. The shared changed-file router selects one
+affected project when possible, skips Markdown-only and `firmware/` changes, and
+fails closed on incomplete diff data. A workflow, packaging, discovery, or routing
+change runs all five applications on both supported ESP-IDF versions.
 
 CI produces one flashable ZIP per project and framework version. See
 [the firmware guide](../../docs/firmware.md).

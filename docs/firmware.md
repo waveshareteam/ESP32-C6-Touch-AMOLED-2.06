@@ -1,5 +1,7 @@
 # Firmware artifacts and flashing
 
+[简体中文](firmware_ZH.md)
+
 There are two distinct firmware sources in this repository.
 
 1. `firmware/` contains a factory-provided image retained for recovery or reference.
@@ -47,13 +49,13 @@ python -m pip install esptool
 On Linux or macOS:
 
 ```sh
-./flash.sh --port /dev/ttyACM0
+./flash.sh --port PORT
 ```
 
 On Windows Command Prompt:
 
 ```bat
-flash.bat --port COM5
+flash.bat --port PORT
 ```
 
 The generated helpers contain the exact binary offsets. If a port argument is
@@ -74,6 +76,10 @@ binary files.
 exported binaries. It creates separate per-project, per-framework-version ZIPs only
 after the source build succeeds. Unit tests use synthetic binaries and do not build
 firmware.
+
+The packager rejects ESP-IDF file references that resolve outside the selected build
+directory, refuses ambiguous Arduino merged images, and requires a complete Git
+commit SHA in CI-generated manifests.
 
 Generated ZIP files belong in CI artifacts or an intentional GitHub release; they
 are not committed to the source tree.

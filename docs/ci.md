@@ -1,5 +1,7 @@
 # CI policy
 
+[简体中文](ci_ZH.md)
+
 GitHub Actions is the build-validation authority for this repository. The workflows
 build source; the committed factory image is not treated as a source-build target.
 
@@ -27,24 +29,39 @@ Arduino discovery accepts only direct children of `examples/arduino` where the
 directory and primary `.ino` file have the same name. Everything under
 `examples/arduino/libraries` is excluded from discovery.
 
-On pull requests and pushes:
+One shared changed-file router receives the complete rename-aware diff on pull
+requests and pushes:
 
 - A changed first-party project or sketch selects that target.
 - A shared Arduino library change selects all six sketches.
 - A workflow, discovery-script, test, or firmware-packager change selects every
   target for the affected framework.
-- If a relevant pull request cannot be mapped safely, the workflow falls back to
-  the complete framework matrix.
+- Markdown at the repository root, beside an example, or inside a bundled library
+  selects no firmware builds.
+- Files below `firmware/` are reported separately and never enter the default
+  example matrices.
+- An unfamiliar non-document path conservatively selects both complete matrices
+  and remains visible in the routing report.
+- Missing, empty, or unreadable diff data fails the discovery job; it never becomes
+  a silent full build or successful no-op.
 
 `workflow_dispatch` accepts a directory name, repository-relative path, or `all`.
 
+The always-visible `repository-policy.yml` workflow checks first-party bilingual
+pairs, reciprocal and same-language navigation, local links and fragments, homepage
+structure, and public-text hygiene. Its homepage and exemption contract is read from
+`config/markdown-audit.json`. The two build workflows also remain visible on every
+pull request, but their expensive matrix jobs run only when the router selects
+source-build inputs.
+
 ## Build and package sequence
 
-1. Checkout the source with sufficient history for changed-path discovery.
-2. Run Python unit tests for discovery and packaging utilities.
-3. Build every selected source target.
-4. Package successful build output into a flashable ZIP.
-5. Upload each ZIP as a separate workflow artifact for 14 days.
+1. Checkout the source with sufficient history for rename-aware routing.
+2. Run Python unit tests for discovery, routing, Markdown policy, and packaging.
+3. Fail closed if the complete changed-file scope cannot be read.
+4. Build every selected source target.
+5. Package successful build output into a flashable ZIP.
+6. Upload each ZIP as a separate workflow artifact for 14 days.
 
 Packaging is deliberately downstream of compilation. A ZIP artifact therefore
 means the corresponding source build succeeded.

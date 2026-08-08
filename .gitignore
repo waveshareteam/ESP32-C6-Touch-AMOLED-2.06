@@ -3,6 +3,8 @@
 Thumbs.db
 .idea/
 .vscode/
+__pycache__/
+*.py[cod]
 
 # ESP-IDF and Arduino build output
 **/build/

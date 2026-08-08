@@ -1,5 +1,7 @@
 # Support
 
+[简体中文](SUPPORT_ZH.md)
+
 For setup instructions, downloads, and board-specific guidance, start with the
 [Waveshare product wiki](https://www.waveshare.com/wiki/ESP32-C6-Touch-AMOLED-2.06).
 

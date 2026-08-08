@@ -1,5 +1,7 @@
 # Hardware pin audit
 
+[简体中文](hardware_ZH.md)
+
 The board-facing definitions were cross-checked against the repository schematic
 and the published Waveshare ESP-IDF board component. The source of truth for this
 repository remains the board revision represented by

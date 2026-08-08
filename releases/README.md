@@ -1,5 +1,7 @@
 # Release packaging
 
+[简体中文](README_ZH.md)
+
 `package_firmware.py` converts successful CI build output into a self-contained ZIP.
 It does not compile firmware.
 
@@ -7,6 +9,9 @@ For ESP-IDF it reads the project's generated `build/flasher_args.json`, preservi
 the framework-provided flash offsets. For Arduino it prefers the exported merged
 binary and falls back to the standard ESP32-C6 bootloader, partition, and application
 offsets when necessary.
+
+The packager rejects ESP-IDF paths that escape the selected build directory,
+ambiguous Arduino merged images, and CI manifests without a complete Git commit SHA.
 
 Each package contains:
 

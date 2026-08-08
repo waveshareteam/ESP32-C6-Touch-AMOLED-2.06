@@ -2,23 +2,9 @@ name: ESP-IDF examples
 
 on:
   pull_request:
-    paths:
-      - "examples/esp-idf/**"
-      - "releases/**"
-      - "config/toolchains.json"
-      - ".github/workflows/esp-idf-examples.yml"
-      - ".github/scripts/discover_esp_idf_examples.py"
-      - ".github/scripts/test_ci_tools.py"
   push:
     branches:
       - main
-    paths:
-      - "examples/esp-idf/**"
-      - "releases/**"
-      - "config/toolchains.json"
-      - ".github/workflows/esp-idf-examples.yml"
-      - ".github/scripts/discover_esp_idf_examples.py"
-      - ".github/scripts/test_ci_tools.py"
   workflow_dispatch:
     inputs:
       project:
@@ -41,6 +27,10 @@ jobs:
       matrix: ${{ steps.examples.outputs.matrix }}
       has_examples: ${{ steps.examples.outputs.has_examples }}
       examples: ${{ steps.examples.outputs.examples }}
+      docs_only: ${{ steps.examples.outputs.docs_only }}
+      firmware_touched: ${{ steps.examples.outputs.firmware_touched }}
+      release_review_required: ${{ steps.examples.outputs.release_review_required }}
+      unknown_paths: ${{ steps.examples.outputs.unknown_paths }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,39 +43,62 @@ jobs:
       - name: Discover changed ESP-IDF examples
         id: examples
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_EXAMPLE: ${{ inputs.project }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             python .github/scripts/discover_esp_idf_examples.py \
-              --example "${{ inputs.project }}"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            python .github/scripts/discover_esp_idf_examples.py \
-              --base-ref "${{ github.event.pull_request.base.sha }}" \
-              --head-ref "${{ github.sha }}" \
-              --fallback-all
+              --example "$MANUAL_EXAMPLE"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            python .github/scripts/route_ci_changes.py \
+              --framework esp-idf \
+              --base-ref "$PR_BASE_SHA" \
+              --head-ref "$PR_HEAD_SHA"
           else
-            before="${{ github.event.before }}"
-            if [[ "$before" == "0000000000000000000000000000000000000000" ]]; then
-              before=""
-            fi
-            python .github/scripts/discover_esp_idf_examples.py \
-              --base-ref "$before" \
-              --head-ref "${{ github.sha }}" \
-              --fallback-all
+            python .github/scripts/route_ci_changes.py \
+              --framework esp-idf \
+              --base-ref "$PUSH_BASE_SHA" \
+              --head-ref "$PUSH_HEAD_SHA"
           fi
 
       - name: Summary
         shell: bash
+        env:
+          HAS_EXAMPLES: ${{ steps.examples.outputs.has_examples }}
+          SELECTED_EXAMPLES: ${{ steps.examples.outputs.examples }}
+          DOCS_ONLY: ${{ steps.examples.outputs.docs_only }}
+          FIRMWARE_TOUCHED: ${{ steps.examples.outputs.firmware_touched }}
+          RELEASE_REVIEW_REQUIRED: ${{ steps.examples.outputs.release_review_required }}
+          UNKNOWN_PATHS: ${{ steps.examples.outputs.unknown_paths }}
         run: |
-          if [[ "${{ steps.examples.outputs.has_examples }}" == "true" ]]; then
+          if [[ "$HAS_EXAMPLES" == "true" ]]; then
             {
               echo "### ESP-IDF examples selected"
               echo
-              echo '${{ steps.examples.outputs.examples }}' | tr ',' '\n' | sed '/^$/d' | sed 's/^/- /'
+              printf '%s\n' "$SELECTED_EXAMPLES" | sed '/^$/d; s/^/- /'
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No ESP-IDF example changes detected." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo
+            printf 'Documentation-only: %s\n' "${DOCS_ONLY:-n/a}"
+            printf 'Firmware surface touched: %s\n' "${FIRMWARE_TOUCHED:-n/a}"
+            printf 'Release review required: %s\n' "${RELEASE_REVIEW_REQUIRED:-n/a}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ -n "$UNKNOWN_PATHS" ]]; then
+            {
+              echo
+              echo "Unknown paths:"
+              printf '%s\n' "$UNKNOWN_PATHS" | sed '/^$/d; s/^/- /'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   build:
