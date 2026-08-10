@@ -24,7 +24,7 @@ idf_component_register(
     SRCS ${SRCS}
     INCLUDE_DIRS ${INCLUDE_DIRS}
     REQUIRES ${BSP_EXTRA_REQUIRES}
-    PRIV_REQUIRES ${BSP_EXTRA_PRIV_REQUIRES} esp_timer fatfs esp_psram esp_mm
+    PRIV_REQUIRES ${BSP_EXTRA_PRIV_REQUIRES} esp_timer fatfs
 )
 
 target_compile_options(

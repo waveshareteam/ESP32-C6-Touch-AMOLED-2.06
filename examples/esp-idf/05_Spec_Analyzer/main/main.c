@@ -195,7 +195,7 @@ void lv_example_canvas_fft(void)
 /* ------------------ 主函数 ------------------ */
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Starting Audio Spectrum Analyzer (240x200)");
+    ESP_LOGI(TAG, "Starting Audio Spectrum Analyzer (%dx%d)", CANVAS_WIDTH, CANVAS_HEIGHT);
 
     lv_display_t *disp = bsp_display_start();
     if (disp)

@@ -100,6 +100,12 @@ def main() -> int:
     github_output("matrix", matrix_json)
     github_output("has_examples", "true" if selected else "false")
     github_output("examples", ",".join(selected))
+    github_output("docs_only", "false")
+    github_output("firmware_touched", "false")
+    github_output("release_review_required", "false")
+    github_output("unknown_paths", "")
+    github_output("unknown_path_count", "0")
+    github_output("unknown_paths_truncated", "false")
     print(matrix_json)
     return 0
 

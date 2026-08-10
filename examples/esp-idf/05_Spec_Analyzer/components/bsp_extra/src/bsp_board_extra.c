@@ -65,17 +65,29 @@ static void audio_callback(audio_player_cb_ctx_t *ctx)
 
 esp_err_t bsp_extra_i2s_read(void *audio_buffer, size_t len, size_t *bytes_read, uint32_t timeout_ms)
 {
-    esp_err_t ret = ESP_OK;
-    ret = esp_codec_dev_read(record_dev_handle, audio_buffer, len);
-    *bytes_read = len;
+    if (!bytes_read) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    *bytes_read = 0;
+    (void)timeout_ms; // The synchronous esp_codec_dev API has no timeout parameter.
+    esp_err_t ret = esp_codec_dev_read(record_dev_handle, audio_buffer, len);
+    if (ret == ESP_OK) {
+        *bytes_read = len;
+    }
     return ret;
 }
 
 esp_err_t bsp_extra_i2s_write(void *audio_buffer, size_t len, size_t *bytes_written, uint32_t timeout_ms)
 {
-    esp_err_t ret = ESP_OK;
-    ret = esp_codec_dev_write(play_dev_handle, audio_buffer, len);
-    *bytes_written = len;
+    if (!bytes_written) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    *bytes_written = 0;
+    (void)timeout_ms; // The synchronous esp_codec_dev API has no timeout parameter.
+    esp_err_t ret = esp_codec_dev_write(play_dev_handle, audio_buffer, len);
+    if (ret == ESP_OK) {
+        *bytes_written = len;
+    }
     return ret;
 }
 

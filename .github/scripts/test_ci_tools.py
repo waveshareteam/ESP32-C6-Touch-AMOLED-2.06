@@ -76,6 +76,47 @@ class DiscoveryTests(unittest.TestCase):
             6,
         )
 
+    def test_manual_discovery_cli_writes_declared_workflow_outputs(self) -> None:
+        expected_status = {
+            "docs_only": "false",
+            "firmware_touched": "false",
+            "release_review_required": "false",
+            "unknown_paths": "",
+            "unknown_path_count": "0",
+            "unknown_paths_truncated": "false",
+        }
+        for script in (
+            "discover_esp_idf_examples.py",
+            "discover_arduino_examples.py",
+        ):
+            with self.subTest(script=script), tempfile.TemporaryDirectory() as temporary_directory:
+                output = Path(temporary_directory) / "github-output.txt"
+                environment = os.environ.copy()
+                environment["GITHUB_OUTPUT"] = str(output)
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPO_ROOT / ".github/scripts" / script),
+                        "--example",
+                        "all",
+                    ],
+                    cwd=REPO_ROOT,
+                    env=environment,
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                outputs = dict(
+                    line.split("=", 1)
+                    for line in output.read_text(encoding="utf-8").splitlines()
+                )
+                self.assertTrue({"matrix", "has_examples", "examples"}.issubset(outputs))
+                self.assertEqual(
+                    {name: outputs[name] for name in expected_status}, expected_status
+                )
+
 
 class RoutingTests(unittest.TestCase):
     idf = {
@@ -110,6 +151,13 @@ class RoutingTests(unittest.TestCase):
         )
         self.assertEqual(result.idf_examples, ["examples/esp-idf/01_demo"])
         self.assertEqual(result.arduino_examples, ["examples/arduino/02_demo"])
+
+    def test_deleted_direct_source_selects_affected_example(self) -> None:
+        result = self.route(
+            router.Change("D", "examples/esp-idf/01_demo/main/removed.c")
+        )
+        self.assertEqual(result.idf_examples, ["examples/esp-idf/01_demo"])
+        self.assertEqual(result.arduino_examples, [])
 
     def test_shared_library_and_workflow_inputs_select_expected_full_sets(self) -> None:
         library = self.route(
