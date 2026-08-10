@@ -2,14 +2,14 @@
   <h1>ESP32-C6-Touch-AMOLED-2.06</h1>
   <p><strong>搭载 2.06 英寸 410 × 502 QSPI AMOLED 触摸屏的 ESP32-C6 开发板</strong></p>
   <p><a href="README.md">English</a></p>
-  <p><img src="https://www.waveshare.com/media/catalog/product/cache/1/image/560x560/9df78eab33525d08d6e5fb8d27136e95/e/s/esp32-c6-touch-amoled-2.06-1.jpg" alt="ESP32-C6-Touch-AMOLED-2.06" width="420"></p>
+  <p><img src="docs/assets/esp32-c6-touch-amoled-2.06.jpg" alt="ESP32-C6-Touch-AMOLED-2.06 开发板" width="420"></p>
   <p>
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml"><img alt="ESP-IDF Examples" src="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml/badge.svg"></a>
     <a href="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml"><img alt="Arduino Examples" src="https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml/badge.svg"></a>
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/waveshareteam/ESP32-C6-Touch-AMOLED-2.06"></a>
   </p>
   <p>
-    <a href="https://www.waveshare.com/esp32-C6-touch-amoled-2.06.htm">🌐 产品页面</a> ·
+    <a href="https://www.waveshare.com/esp32-c6-touch-amoled-2.06.htm">🌐 产品页面</a> ·
     <a href="https://docs.waveshare.com/ESP32-C6-Touch-AMOLED-2.06">📚 产品文档</a> ·
     <a href="examples/esp-idf/README_ZH.md">🧩 ESP-IDF 示例</a> ·
     <a href="examples/arduino/README_ZH.md">🔧 Arduino 示例</a> ·

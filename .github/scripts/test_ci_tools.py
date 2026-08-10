@@ -346,6 +346,20 @@ class MarkdownPolicyTests(unittest.TestCase):
             {finding.code for finding in findings},
         )
 
+    def test_product_homepage_policy_is_explicit(self) -> None:
+        config = markdown_policy.load_policy_config(
+            REPO_ROOT,
+            Path("config/markdown-audit.json"),
+        )
+        homepage = config["homepage_pairs"][0]
+        self.assertEqual(homepage["profile"], "single-product")
+        self.assertIn("hero_image", homepage["required_components"])
+        self.assertIn("product", homepage["required_quick_links"])
+        self.assertEqual(
+            config["docs_only_allowed_patterns"],
+            ["docs/assets/esp32-c6-touch-amoled-2.06.jpg"],
+        )
+
     def test_link_and_fragment_failures_are_reported(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

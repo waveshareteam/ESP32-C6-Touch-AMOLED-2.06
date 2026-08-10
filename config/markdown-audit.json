@@ -2,6 +2,9 @@
   "pair_exempt_patterns": [
     ".github/pull_request_template.md"
   ],
+  "docs_only_allowed_patterns": [
+    "docs/assets/esp32-c6-touch-amoled-2.06.jpg"
+  ],
   "homepage_pairs": [
     {
       "english": "README.md",
