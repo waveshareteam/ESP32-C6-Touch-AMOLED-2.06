@@ -59,8 +59,10 @@ NON_BUILD_EXACT = {
 BOTH_FRAMEWORK_GLOBALS = {
     ".github/scripts/route_ci_changes.py",
     ".github/scripts/test_ci_tools.py",
+    "Flash-CI-Firmware.cmd",
     "config/toolchains.json",
     "releases/package_firmware.py",
+    "scripts/Flash-CI-Firmware.ps1",
 }
 IDF_GLOBALS = {
     ".github/scripts/discover_esp_idf_examples.py",

@@ -1,0 +1,19 @@
+{
+  "build_override_patterns": [],
+  "documentation_patterns": [],
+  "documentation_asset_patterns": [],
+  "ignore_build_patterns": [],
+  "firmware_patterns": [],
+  "esp_idf_shared_patterns": [],
+  "arduino_shared_patterns": [],
+  "esp_idf_global_patterns": [],
+  "arduino_global_patterns": [],
+  "global_build_patterns": [
+    ".github/scripts/route_ci_changes.py",
+    ".github/scripts/test_ci_tools.py",
+    "Flash-CI-Firmware.cmd",
+    "config/ci-routing.json",
+    "releases/package_firmware.py",
+    "scripts/Flash-CI-Firmware.ps1"
+  ]
+}

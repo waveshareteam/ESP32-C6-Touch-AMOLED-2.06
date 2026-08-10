@@ -2,218 +2,107 @@
 #include <Arduino.h>
 #include "pin_config.h"
 #include <lvgl.h>
-
 #include "Arduino_GFX_Library.h"
 #include "Arduino_DriveBus_Library.h"
 #include "lv_conf.h"
-#include <demos/lv_demos.h>
-
 #include "HWCDC.h"
-HWCDC USBSerial;
 
+HWCDC USBSerial;
+static constexpr uint32_t LVGL_BUFFER_LINES = 20;
 uint32_t screenWidth;
 uint32_t screenHeight;
-uint32_t bufSize;
+size_t draw_buffer_bytes;
 lv_display_t *disp;
-lv_color_t *disp_draw_buf;
+uint8_t *disp_draw_buf;
+lv_obj_t *uptime_label;
+bool lvgl_ready = false;
+bool touch_ready = false;
+uint32_t last_uptime_update;
 
-// #define DIRECT_RENDER_MODE
-
-Arduino_DataBus *bus = new Arduino_ESP32QSPI(
-  LCD_CS /* CS */, LCD_SCLK /* SCK */, LCD_SDIO0 /* SDIO0 */, LCD_SDIO1 /* SDIO1 */,
-  LCD_SDIO2 /* SDIO2 */, LCD_SDIO3 /* SDIO3 */);
-
-Arduino_GFX *gfx = new Arduino_CO5300(bus, LCD_RESET /* RST */,
-                                      0 /* rotation */, LCD_WIDTH, LCD_HEIGHT,
-                                      22 /* col_offset1 */,
-                                      0 /* row_offset1 */,
-                                      0 /* col_offset2 */,
-                                      0 /* row_offset2 */);
-
-
-std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus =
-  std::make_shared<Arduino_HWIIC>(IIC_SDA, IIC_SCL, &Wire);
-
+Arduino_DataBus *bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
+Arduino_GFX *gfx = new Arduino_CO5300(bus, LCD_RESET, 0, LCD_WIDTH, LCD_HEIGHT, 22, 0, 0, 0);
+std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus = std::make_shared<Arduino_HWIIC>(IIC_SDA, IIC_SCL, &Wire);
 void Arduino_IIC_Touch_Interrupt(void);
+std::unique_ptr<Arduino_IIC> FT3168(new Arduino_FT3x68(IIC_Bus, FT3168_DEVICE_ADDRESS, DRIVEBUS_DEFAULT_VALUE, TP_INT, Arduino_IIC_Touch_Interrupt));
 
-std::unique_ptr<Arduino_IIC> FT3168(new Arduino_FT3x68(IIC_Bus, FT3168_DEVICE_ADDRESS,
-                                                       DRIVEBUS_DEFAULT_VALUE, TP_INT, Arduino_IIC_Touch_Interrupt));
-
-void Arduino_IIC_Touch_Interrupt(void) {
-  FT3168->IIC_Interrupt_Flag = true;
+void Arduino_IIC_Touch_Interrupt(void) { if (FT3168) FT3168->IIC_Interrupt_Flag = true; }
+uint32_t millis_cb(void) { return millis(); }
+void my_disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_map) {
+  if (gfx && area && px_map) gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, lv_area_get_width(area), lv_area_get_height(area));
+  lv_disp_flush_ready(display);
 }
-
-#if LV_USE_LOG != 0
-void my_print(lv_log_level_t level, const char *buf) {
-  LV_UNUSED(level);
-  USBSerial.println(buf);
-  USBSerial.flush();
-}
-#endif
-
-uint32_t millis_cb(void) {
-  return millis();
-}
-
-/* LVGL calls it when a rendered image needs to copied to the display*/
-void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
-#ifndef DIRECT_RENDER_MODE
-  uint32_t w = lv_area_get_width(area);
-  uint32_t h = lv_area_get_height(area);
-
-  gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
-#endif  // #ifndef DIRECT_RENDER_MODE
-
-  /*Call it to tell LVGL you are ready*/
-  lv_disp_flush_ready(disp);
-}
-
-/*Read the touchpad*/
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
-  int32_t touchX = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
-  int32_t touchY = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
-
-  if (FT3168->IIC_Interrupt_Flag == true) {
-    FT3168->IIC_Interrupt_Flag = false;
-    data->state = LV_INDEV_STATE_PR;
-
-    /*Set the coordinates*/
-    data->point.x = touchX;
-    data->point.y = touchY;
-
-    USBSerial.print("Data x ");
-    USBSerial.print(touchX);
-
-    USBSerial.print("Data y ");
-    USBSerial.println(touchY);
-  } else {
-    data->state = LV_INDEV_STATE_REL;
-  }
+  LV_UNUSED(indev);
+  data->state = LV_INDEV_STATE_REL;
+  if (!touch_ready || !FT3168 || !FT3168->IIC_Interrupt_Flag) return;
+  FT3168->IIC_Interrupt_Flag = false;
+  data->point.x = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
+  data->point.y = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
+  data->state = LV_INDEV_STATE_PR;
 }
-
 void rounder_event_cb(lv_event_t *e) {
   lv_area_t *area = (lv_area_t *)lv_event_get_param(e);
-  uint16_t x1 = area->x1;
-  uint16_t x2 = area->x2;
-
-  uint16_t y1 = area->y1;
-  uint16_t y2 = area->y2;
-
-  // round the start of coordinate down to the nearest 2M number
-  area->x1 = (x1 >> 1) << 1;
-  area->y1 = (y1 >> 1) << 1;
-  // round the end of coordinate up to the nearest 2N+1 number
-  area->x2 = ((x2 >> 1) << 1) + 1;
-  area->y2 = ((y2 >> 1) << 1) + 1;
+  if (!area || screenWidth == 0 || screenHeight == 0) return;
+  int32_t y1 = area->y1 & ~1;
+  int32_t y2 = area->y2 | 1;
+  area->x1 = 0;
+  area->x2 = (int32_t)screenWidth - 1;
+  area->y1 = y1 < 0 ? 0 : y1;
+  area->y2 = y2 >= (int32_t)screenHeight ? (int32_t)screenHeight - 1 : y2;
 }
 
 void setup() {
 #ifdef DEV_DEVICE_INIT
   DEV_DEVICE_INIT();
 #endif
-
   USBSerial.begin(115200);
-  // USBSerial.setDebugOutput(true);
-  // while(!USBSerial);
-  USBSerial.println("Arduino_GFX LVGL_Arduino_v9 example ");
-  String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  USBSerial.println(LVGL_Arduino);
-
-  // Init Display
-  if (!gfx->begin()) {
-    USBSerial.println("gfx->begin() failed!");
-  }
+  if (!gfx || !gfx->begin()) { USBSerial.println("Display initialization failed; LVGL disabled."); return; }
   gfx->fillScreen(RGB565_BLACK);
-
   Wire.begin(IIC_SDA, IIC_SCL);
-
-  while (FT3168->begin() == false) {
-    USBSerial.println("FT3168 initialization fail");
-    delay(2000);
+  for (uint8_t attempt = 1; FT3168 && attempt <= 5 && !touch_ready; ++attempt) {
+    touch_ready = FT3168->begin();
+    if (!touch_ready) { USBSerial.printf("FT3168 initialization failed (%u/5)\n", attempt); delay(500); }
   }
-  USBSerial.println("FT3168 initialization successfully");
-
-  FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE,
-                                 FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
-
+  if (touch_ready) FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE, FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
+  else USBSerial.println("FT3168 unavailable; continuing without touch.");
   lv_init();
-
-  /*Set a tick source so that LVGL will know how much time elapsed. */
   lv_tick_set_cb(millis_cb);
-
-  /* register print function for debugging */
-#if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print);
-#endif
-
   screenWidth = gfx->width();
   screenHeight = gfx->height();
-
-#ifdef DIRECT_RENDER_MODE
-  bufSize = screenWidth * screenHeight;
-#else
-  bufSize = screenWidth * 50;
-#endif
-
-#ifdef ESP32
-#if defined(DIRECT_RENDER_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-  disp_draw_buf = (lv_color_t *)gfx->getFramebuffer();
-#else   // !(defined(DIRECT_RENDER_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)))
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  if (!disp_draw_buf) {
-    // remove MALLOC_CAP_INTERNAL flag try again
-    disp_draw_buf = (lv_color_t *)malloc(bufSize * 2);
-  }
-#endif  // !(defined(DIRECT_RENDER_MODE) && (defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)))
-#else   // !ESP32
-  USBSerial.println("LVGL disp_draw_buf heap_caps_malloc failed! malloc again...");
-  disp_draw_buf = (lv_color_t *)malloc(bufSize * 2);
-#endif  // !ESP32
-  if (!disp_draw_buf) {
-    USBSerial.println("LVGL disp_draw_buf allocate failed!");
-  } else {
-    disp = lv_display_create(screenWidth, screenHeight);
-    lv_display_set_flush_cb(disp, my_disp_flush);
-#ifdef DIRECT_RENDER_MODE
-    lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
-#else
-    lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
-#endif
-
+  draw_buffer_bytes = (size_t)screenWidth * LVGL_BUFFER_LINES * lv_color_format_get_size(LV_COLOR_FORMAT_RGB565);
+  disp_draw_buf = (uint8_t *)heap_caps_malloc(draw_buffer_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (!disp_draw_buf) disp_draw_buf = (uint8_t *)malloc(draw_buffer_bytes);
+  if (!disp_draw_buf) { USBSerial.println("LVGL buffer allocation failed; LVGL disabled."); return; }
+  disp = lv_display_create(screenWidth, screenHeight);
+  if (!disp) { USBSerial.println("LVGL display creation failed; LVGL disabled."); return; }
+  lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB565);
+  lv_display_set_flush_cb(disp, my_disp_flush);
+  lv_display_set_buffers(disp, disp_draw_buf, NULL, draw_buffer_bytes, LV_DISPLAY_RENDER_MODE_PARTIAL);
+  lv_display_add_event_cb(disp, rounder_event_cb, LV_EVENT_INVALIDATE_AREA, NULL);
+  if (touch_ready) {
     lv_indev_t *indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_read_cb(indev, my_touchpad_read);
-    lv_display_add_event_cb(disp, rounder_event_cb, LV_EVENT_INVALIDATE_AREA, NULL);
-
-    lv_obj_t *label = lv_label_create(lv_scr_act());
-    lv_label_set_text(label, "Hello Arduino, I'm LVGL!(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-
-    lv_demo_widgets();
-    // lv_demo_benchmark();
-    // lv_demo_keypad_encoder();
-    // lv_demo_music();
-    // lv_demo_stress();
-
+    if (indev) { lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); lv_indev_set_read_cb(indev, my_touchpad_read); }
+    else { touch_ready = false; USBSerial.println("LVGL touch input creation failed; continuing without touch."); }
   }
-
+  lv_obj_t *title = lv_label_create(lv_scr_act());
+  uptime_label = lv_label_create(lv_scr_act());
+  if (!title || !uptime_label) { USBSerial.println("LVGL object creation failed; LVGL disabled."); return; }
+  lv_label_set_text(title, "LVGL status");
+  lv_obj_align(title, LV_ALIGN_CENTER, 0, -20);
+  lv_label_set_text(uptime_label, "Uptime: 0 s");
+  lv_obj_align(uptime_label, LV_ALIGN_CENTER, 0, 20);
+  lvgl_ready = true;
   USBSerial.println("Setup done");
 }
 
 void loop() {
-  lv_task_handler(); /* let the GUI do its work */
-
-#ifdef DIRECT_RENDER_MODE
-#if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
-  gfx->flush();
-#else   // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-  gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
-#endif  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-#else   // !DIRECT_RENDER_MODE
-#ifdef CANVAS
-  gfx->flush();
-#endif
-#endif  // !DIRECT_RENDER_MODE
-
+  if (!lvgl_ready) { delay(1000); return; }
+  lv_task_handler();
+  if (uptime_label && millis() - last_uptime_update >= 1000) {
+    last_uptime_update = millis();
+    char text[32];
+    snprintf(text, sizeof(text), "Uptime: %lu s", (unsigned long)(last_uptime_update / 1000));
+    lv_label_set_text(uptime_label, text);
+  }
   delay(5);
 }

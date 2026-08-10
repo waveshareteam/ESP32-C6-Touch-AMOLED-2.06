@@ -49,11 +49,11 @@ def contained_path(root: Path, candidate: Path, description: str) -> Path:
 
 
 def manifest_git_sha() -> str:
-    value = os.environ.get("GITHUB_SHA", "")
+    value = os.environ.get("PACKAGE_GIT_SHA") or os.environ.get("GITHUB_SHA", "")
     if os.environ.get("CI", "").lower() == "true" and not re.fullmatch(
         r"[0-9a-fA-F]{40}", value
     ):
-        raise ValueError("CI packaging requires a complete 40-character GITHUB_SHA")
+        raise ValueError("CI packaging requires a complete 40-character PACKAGE_GIT_SHA or GITHUB_SHA")
     return value or "unknown"
 
 

@@ -513,6 +513,117 @@ class PackageTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 packager.manifest_git_sha()
 
+    def test_ci_manifest_prefers_explicit_package_sha(self) -> None:
+        package_sha = "a" * 40
+        with mock.patch.dict(
+            os.environ,
+            {"CI": "true", "GITHUB_SHA": "b" * 40, "PACKAGE_GIT_SHA": package_sha},
+            clear=False,
+        ):
+            self.assertEqual(packager.manifest_git_sha(), package_sha)
+
+
+class RuntimeRegressionTests(unittest.TestCase):
+    def test_flasher_changes_are_known_global_build_inputs(self) -> None:
+        result = router.route_changes(
+            [
+                router.Change("M", "Flash-CI-Firmware.cmd"),
+                router.Change("M", "scripts/Flash-CI-Firmware.ps1"),
+            ]
+        )
+        self.assertTrue(result.all_idf)
+        self.assertTrue(result.all_arduino)
+        self.assertEqual(result.unknown_paths, [])
+
+    def test_spec_analyzer_pins_c6_to_i2s0_at_configure_and_compile_time(self) -> None:
+        defaults = (REPO_ROOT / "examples/esp-idf/05_Spec_Analyzer/sdkconfig.defaults").read_text(encoding="utf-8")
+        source = (REPO_ROOT / "examples/esp-idf/05_Spec_Analyzer/components/bsp_extra/src/bsp_board_extra.c").read_text(encoding="utf-8")
+        self.assertIn("CONFIG_BSP_I2S_NUM=0", defaults)
+        self.assertIn('#include "sdkconfig.h"', source)
+        self.assertIn("CONFIG_BSP_I2S_NUM != 0", source)
+
+    def test_arduino_runtime_examples_use_small_safe_partial_rendering(self) -> None:
+        examples = [
+            "03_LVGL_PCF85063_simpleTime/03_LVGL_PCF85063_simpleTime.ino",
+            "04_LVGL_QMI8658_ui/04_LVGL_QMI8658_ui.ino",
+            "06_LVGL_Arduino_v9/06_LVGL_Arduino_v9.ino",
+        ]
+        for relative in examples:
+            with self.subTest(example=relative):
+                sketch = (REPO_ROOT / "examples/arduino" / relative).read_text(encoding="utf-8")
+                self.assertIn("LVGL_BUFFER_LINES = 20", sketch)
+                self.assertIn("uint8_t *disp_draw_buf", sketch)
+                self.assertIn("lv_color_format_get_size(LV_COLOR_FORMAT_RGB565)", sketch)
+                self.assertIn("lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB565)", sketch)
+                self.assertNotIn("sizeof(lv_color_t)", sketch)
+                self.assertIn("LV_DISPLAY_RENDER_MODE_PARTIAL", sketch)
+                self.assertIn("if (!lvgl_ready)", sketch)
+                self.assertIn("attempt <= 5", sketch)
+                self.assertIn("delay(500)", sketch)
+                self.assertIn("IIC_Interrupt_Flag", sketch)
+                self.assertIn("area->x1 = 0", sketch)
+                self.assertNotIn("screenWidth * screenHeight", sketch)
+                self.assertNotIn("while (FT3168->begin()", sketch)
+        clock = (REPO_ROOT / "examples/arduino" / examples[0]).read_text(encoding="utf-8")
+        self.assertNotIn("DIRECT_RENDER_MODE", clock)
+        self.assertIn("RTC unavailable", clock)
+        qmi = (REPO_ROOT / "examples/arduino" / examples[1]).read_text(encoding="utf-8")
+        self.assertIn("QMI8658 unavailable", qmi)
+        self.assertIn("acc.x * 1000.0f", qmi)
+        self.assertIn("-4000, 4000", qmi)
+        status = (REPO_ROOT / "examples/arduino" / examples[2]).read_text(encoding="utf-8")
+        self.assertNotIn("lv_demo_widgets()", status)
+        self.assertIn("Uptime:", status)
+
+    def test_build_checkouts_pin_artifacts_to_pr_head(self) -> None:
+        expected = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
+        for filename in ("esp-idf-examples.yml", "arduino-examples.yml"):
+            workflow = (REPO_ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
+            build = workflow.split("  build:", 1)[1]
+            self.assertIn(expected, build)
+            self.assertIn("PACKAGE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}", build)
+
+    def test_flasher_resolves_current_identity_and_rejects_bad_packages(self) -> None:
+        flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")
+        self.assertIn("state-v3.json", flasher)
+        self.assertIn("rev-parse HEAD", flasher)
+        self.assertIn("--commit $FinalSha", flasher)
+        self.assertIn("Test-PackageManifest", flasher)
+        self.assertIn("Get-FileHash", flasher)
+        self.assertIn("Test-RelativePackagePath", flasher)
+        self.assertIn("SourceProject", flasher)
+        self.assertIn("Manifest flash offset is invalid", flasher)
+        self.assertIn("overlapping flash ranges", flasher)
+        self.assertIn("[int64]$file.size -le 0", flasher)
+        self.assertIn("921600", flasher)
+        self.assertIn("'esptool'", flasher)
+        self.assertIn("finalSHA=resolved-at-runtime", flasher)
+        self.assertIn("auto-detect-at-runtime", flasher)
+        self.assertNotRegex(flasher, r"(?i)\b[0-9a-f]{40}\b")
+        self.assertNotRegex(flasher, r"(?m)\bRun\s*=\s*['\"]?\d{8,}")
+        self.assertNotRegex(flasher, r"(?i)[A-Z]:\\Users\\[^\\\r\n]+")
+        self.assertNotIn("idf5.5_py3.13_env", flasher)
+        self.assertNotRegex(flasher, r"['\"]COM\d+['\"]")
+        self.assertNotIn("flash.bat", flasher)
+
+    def test_flasher_requires_a_verified_device_and_ready_pr_identity(self) -> None:
+        flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")
+        port_resolver = flasher.split("function Resolve-DefaultPort", 1)[1].split(
+            "function Resolve-Executable", 1
+        )[0]
+        self.assertIn("VID_303A&PID_1001", port_resolver)
+        self.assertIn("$pnpPorts.Count -eq 1", port_resolver)
+        self.assertNotIn("SerialPort]::GetPortNames", port_resolver)
+        self.assertIn("status --porcelain=v1 --untracked-files=all", flasher)
+        self.assertIn("symbolic-ref --quiet --short HEAD", flasher)
+        self.assertIn("pr list --repo $Repo --head $Branch --state open", flasher)
+        self.assertIn("number,state,isDraft,headRefName,headRefOid", flasher)
+        self.assertIn("$pullRequests.Count -ne 1", flasher)
+        self.assertIn("[bool]$pullRequest.isDraft", flasher)
+        self.assertIn("$headRefOid -notmatch '^[0-9a-fA-F]{40}$'", flasher)
+        self.assertLess(flasher.index("if ($SelfTest)"), flasher.index("function Resolve-DefaultPort"))
+        self.assertLess(flasher.index("if ($ListOnly)"), flasher.index("function Resolve-DefaultPort"))
+
 
 if __name__ == "__main__":
     unittest.main()

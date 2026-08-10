@@ -120,6 +120,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
@@ -145,6 +147,8 @@ jobs:
             "${{ matrix.sketch }}"
 
       - name: Package flashable firmware
+        env:
+          PACKAGE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python releases/package_firmware.py arduino \
             --project "${{ matrix.sketch }}" \

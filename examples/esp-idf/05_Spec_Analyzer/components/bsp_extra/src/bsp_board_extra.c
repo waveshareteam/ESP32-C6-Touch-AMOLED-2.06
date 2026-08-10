@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include "sdkconfig.h"
 #include "esp_log.h"
 #include "esp_check.h"
 #include "esp_codec_dev_defaults.h"
@@ -19,6 +20,10 @@
 
 #include "bsp/esp-bsp.h"
 #include "bsp_board_extra.h"
+
+#if !defined(CONFIG_BSP_I2S_NUM) || CONFIG_BSP_I2S_NUM != 0
+#error "ESP32-C6 only provides I2S0; CONFIG_BSP_I2S_NUM must be 0"
+#endif
 
 static const char *TAG = "bsp_extra_board";
 
