@@ -1,0 +1,97 @@
+name: Bug report
+description: Report a reproducible source, build, or hardware-integration defect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. Follow SECURITY.md instead.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Framework surface
+      options:
+        - ESP-IDF
+        - Arduino
+        - Factory firmware
+        - Documentation or CI
+    validations:
+      required: true
+
+  - type: input
+    id: example
+    attributes:
+      label: Example or component
+      description: Provide the repository-relative example name or affected component.
+      placeholder: examples/esp-idf/02_lvgl_demo_v9
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Framework version
+      placeholder: ESP-IDF v6.0.2 or Arduino-ESP32 3.3.11
+    validations:
+      required: true
+
+  - type: input
+    id: board_revision
+    attributes:
+      label: Board revision
+      description: Include the PCB or schematic revision if known.
+      placeholder: ESP32-C6-Touch-AMOLED-2.06, schematic V1.0
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem description
+      description: Describe the observed behavior and when it started.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Build ...
+        2. Flash ...
+        3. Reset ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and CI link
+      description: Paste the complete relevant log and link the matching CI run. Remove secrets and personal data.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Include wiring, power source, peripherals, or screenshots when relevant.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked existing issues and the product documentation.
+          required: true
+        - label: I used the framework version and board options documented by this repository.
+          required: true
+        - label: I removed credentials, personal data, order details, and device secrets.
+          required: true

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "target": "esp32c6",
+  "esp_idf_versions": [
+    "v5.5.5",
+    "v6.0.2"
+  ],
+  "arduino_core_version": "3.3.11",
+  "arduino_fqbn": "esp32:esp32:esp32c6:CDCOnBoot=cdc,FlashSize=16M,PartitionScheme=app3M_fat9M_16MB",
+  "arduino_board_manager_url": "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
+}

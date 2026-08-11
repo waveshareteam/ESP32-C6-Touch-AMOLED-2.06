@@ -1,0 +1,48 @@
+{
+  "pair_exempt_patterns": [
+    ".github/pull_request_template.md"
+  ],
+  "docs_only_allowed_patterns": [
+    "docs/assets/esp32-c6-touch-amoled-2.06.jpg"
+  ],
+  "homepage_pairs": [
+    {
+      "english": "README.md",
+      "chinese": "README_ZH.md",
+      "profile": "single-product",
+      "required_components": [
+        "centered_header",
+        "html_h1",
+        "subtitle",
+        "hero_image",
+        "badges",
+        "language_switch",
+        "quick_links",
+        "separator",
+        "h2"
+      ],
+      "required_quick_links": [
+        "product",
+        "documentation",
+        "esp_idf",
+        "arduino",
+        "firmware"
+      ],
+      "required_badges": [
+        "build",
+        "license"
+      ],
+      "required_h2_icons": [
+        "✨",
+        "🖥️",
+        "📦",
+        "🧪",
+        "🛠️",
+        "🗂️",
+        "📚",
+        "🤝",
+        "📄"
+      ]
+    }
+  ]
+}
