@@ -589,7 +589,15 @@ class RuntimeRegressionTests(unittest.TestCase):
         self.assertIn("rev-parse HEAD", flasher)
         self.assertIn("--commit $FinalSha", flasher)
         self.assertIn("Test-PackageManifest", flasher)
-        self.assertIn("Get-FileHash", flasher)
+        self.assertIn("function Get-FileSha256", flasher)
+        self.assertIn("[System.IO.File]::OpenRead($Path)", flasher)
+        self.assertIn("[System.Security.Cryptography.SHA256]::Create()", flasher)
+        self.assertIn("[System.BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()", flasher)
+        self.assertIn("$stream.Dispose()", flasher)
+        self.assertIn("$algorithm.Dispose()", flasher)
+        self.assertIn("$actual = Get-FileSha256 $fullPath", flasher)
+        self.assertNotIn("Get-FileHash", flasher)
+        self.assertNotIn("Convert.ToHexString", flasher)
         self.assertIn("Test-RelativePackagePath", flasher)
         self.assertIn("SourceProject", flasher)
         self.assertIn("Manifest flash offset is invalid", flasher)
@@ -605,6 +613,17 @@ class RuntimeRegressionTests(unittest.TestCase):
         self.assertNotIn("idf5.5_py3.13_env", flasher)
         self.assertNotRegex(flasher, r"['\"]COM\d+['\"]")
         self.assertNotIn("flash.bat", flasher)
+
+    def test_flasher_sha256_helper_uses_powershell_5_compatible_apis(self) -> None:
+        flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")
+        helper = flasher.split("function Get-FileSha256", 1)[1].split("if ($SelfTest)", 1)[0]
+        self.assertIn("[System.IO.File]::OpenRead($Path)", helper)
+        self.assertIn("[System.Security.Cryptography.SHA256]::Create()", helper)
+        self.assertIn("[System.BitConverter]::ToString", helper)
+        self.assertIn("$stream.Dispose()", helper)
+        self.assertIn("$algorithm.Dispose()", helper)
+        self.assertNotIn("Get-FileHash", helper)
+        self.assertNotIn("Convert.ToHexString", helper)
 
     def test_flasher_python_probe_tolerates_native_stderr_and_tries_later_candidates(self) -> None:
         flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")

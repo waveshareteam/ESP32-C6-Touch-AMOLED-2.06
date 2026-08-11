@@ -56,6 +56,19 @@ function Test-RelativePackagePath([string]$PackageRoot, [string]$RelativePath) {
     $candidate = [System.IO.Path]::GetFullPath((Join-Path $PackageRoot $RelativePath))
     return $candidate.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)
 }
+function Get-FileSha256([string]$Path) {
+    $stream = $null
+    $algorithm = $null
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        $algorithm = [System.Security.Cryptography.SHA256]::Create()
+        return [System.BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+        if ($null -ne $algorithm) { $algorithm.Dispose() }
+    }
+}
 
 if ($SelfTest) {
     $current = $DefaultStartIndex; $confirmed = @(); $transitions = 0
@@ -195,8 +208,8 @@ function Test-PackageManifest([string]$PackageDir, $Item, [string]$FinalSha) {
         if (-not (Test-RelativePackagePath $PackageDir $relativePath) -or [string]$file.sha256 -notmatch '^[0-9a-fA-F]{64}$' -or [int64]$file.size -le 0) { throw "Manifest file metadata is unsafe: $relativePath" }
         $fullPath = Join-Path $PackageDir $relativePath
         if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) { throw "Manifest file is missing: $relativePath" }
-        $actual = Get-FileHash -LiteralPath $fullPath -Algorithm SHA256
-        if ($actual.Hash -ne [string]$file.sha256 -or [int64](Get-Item -LiteralPath $fullPath).Length -ne [int64]$file.size) { throw "Manifest checksum or size verification failed: $relativePath" }
+        $actual = Get-FileSha256 $fullPath
+        if ($actual -ne [string]$file.sha256 -or [int64](Get-Item -LiteralPath $fullPath).Length -ne [int64]$file.size) { throw "Manifest checksum or size verification failed: $relativePath" }
         if ($null -ne $file.offset -and [string]$file.offset -ne '') {
             if ([string]$file.offset -notmatch '^0x[0-9a-fA-F]+$') { throw "Manifest flash offset is invalid: $relativePath" }
             $offset = [Convert]::ToInt64(([string]$file.offset).Substring(2), 16)
