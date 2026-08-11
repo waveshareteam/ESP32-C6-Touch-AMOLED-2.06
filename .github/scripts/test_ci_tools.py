@@ -606,6 +606,22 @@ class RuntimeRegressionTests(unittest.TestCase):
         self.assertNotRegex(flasher, r"['\"]COM\d+['\"]")
         self.assertNotIn("flash.bat", flasher)
 
+    def test_flasher_python_probe_tolerates_native_stderr_and_tries_later_candidates(self) -> None:
+        flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")
+        resolver = flasher.split("function Resolve-PythonWithEsptool", 1)[1].split(
+            "function Resolve-FinalSha", 1
+        )[0]
+        self.assertIn("$savedErrorActionPreference = $ErrorActionPreference", resolver)
+        self.assertIn("$ErrorActionPreference = 'Continue'", resolver)
+        self.assertIn("& $candidate -c 'import esptool' *> $null", resolver)
+        self.assertIn("$probeExitCode = $LASTEXITCODE", resolver)
+        self.assertIn("catch {", resolver)
+        self.assertIn("$probeExitCode = -1", resolver)
+        self.assertIn("$ErrorActionPreference = $savedErrorActionPreference", resolver)
+        self.assertLess(resolver.index("$probeExitCode = $LASTEXITCODE"), resolver.index("if ($probeExitCode -eq 0) { return $candidate }"))
+        self.assertIn("foreach ($candidate", resolver)
+        self.assertIn("throw 'No Python interpreter with esptool was found.'", resolver)
+
     def test_flasher_requires_a_verified_device_and_ready_pr_identity(self) -> None:
         flasher = (REPO_ROOT / "scripts/Flash-CI-Firmware.ps1").read_text(encoding="utf-8")
         port_resolver = flasher.split("function Resolve-DefaultPort", 1)[1].split(

@@ -103,7 +103,22 @@ function Resolve-PythonWithEsptool {
     foreach ($root in @((Join-Path $env:USERPROFILE '.espressif\python_env'), 'C:\Espressif', 'D:\espressif')) {
         if (Test-Path -LiteralPath $root) { $candidates += @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter python.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '[\\/]python_env[\\/].+[\\/]Scripts[\\/]python\.exe$' } | ForEach-Object FullName) }
     }
-    foreach ($candidate in @($candidates | Select-Object -Unique)) { & $candidate -c 'import esptool' 2>$null; if ($LASTEXITCODE -eq 0) { return $candidate } }
+    foreach ($candidate in @($candidates | Select-Object -Unique)) {
+        $savedErrorActionPreference = $ErrorActionPreference
+        $probeExitCode = $null
+        try {
+            $ErrorActionPreference = 'Continue'
+            & $candidate -c 'import esptool' *> $null
+            $probeExitCode = $LASTEXITCODE
+        }
+        catch {
+            $probeExitCode = -1
+        }
+        finally {
+            $ErrorActionPreference = $savedErrorActionPreference
+        }
+        if ($probeExitCode -eq 0) { return $candidate }
+    }
     throw 'No Python interpreter with esptool was found.'
 }
 function Resolve-FinalSha([string]$GitExe) {
