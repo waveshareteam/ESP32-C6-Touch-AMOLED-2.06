@@ -575,6 +575,31 @@ class RuntimeRegressionTests(unittest.TestCase):
         self.assertNotIn("lv_demo_widgets()", status)
         self.assertIn("Uptime:", status)
 
+    def test_qmi_runtime_updates_and_logs_are_throttled_for_c6(self) -> None:
+        sketch = (
+            REPO_ROOT
+            / "examples/arduino/04_LVGL_QMI8658_ui/04_LVGL_QMI8658_ui.ino"
+        ).read_text(encoding="utf-8")
+        self.assertIn("QMI8658_BOARD_ADDRESS = 0x6B", sketch)
+        self.assertIn("qmi.begin(Wire, QMI8658_BOARD_ADDRESS", sketch)
+        self.assertIn("ACC_ODR_125Hz", sketch)
+        self.assertIn("SENSOR_UPDATE_INTERVAL_MS = 100", sketch)
+        self.assertIn("SERIAL_LOG_INTERVAL_MS = 1000", sketch)
+        self.assertIn(
+            "(uint32_t)(now - last_sensor_update_ms) >= SENSOR_UPDATE_INTERVAL_MS",
+            sketch,
+        )
+        self.assertIn(
+            "(uint32_t)(now - last_serial_log_ms) >= SERIAL_LOG_INTERVAL_MS",
+            sketch,
+        )
+        self.assertRegex(
+            sketch,
+            r"if \(\(uint32_t\)\(now - last_serial_log_ms\) >= "
+            r"SERIAL_LOG_INTERVAL_MS\) \{\s*last_serial_log_ms = now;\s*"
+            r"USBSerial\.printf\(\"\{ACCEL:",
+        )
+
     def test_build_checkouts_pin_artifacts_to_pr_head(self) -> None:
         expected = "ref: ${{ github.event.pull_request.head.sha || github.sha }}"
         for filename in ("esp-idf-examples.yml", "arduino-examples.yml"):

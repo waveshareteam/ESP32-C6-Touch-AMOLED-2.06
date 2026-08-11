@@ -11,6 +11,9 @@
 
 HWCDC USBSerial;
 static constexpr uint32_t LVGL_BUFFER_LINES = 20;
+static constexpr uint8_t QMI8658_BOARD_ADDRESS = 0x6B;
+static constexpr uint32_t SENSOR_UPDATE_INTERVAL_MS = 100;
+static constexpr uint32_t SERIAL_LOG_INTERVAL_MS = 1000;
 uint32_t screenWidth;
 uint32_t screenHeight;
 size_t draw_buffer_bytes;
@@ -26,6 +29,8 @@ bool touch_ready = false;
 bool qmi_ready = false;
 SensorQMI8658 qmi;
 IMUdata acc;
+uint32_t last_sensor_update_ms = 0;
+uint32_t last_serial_log_ms = 0;
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
 Arduino_GFX *gfx = new Arduino_CO5300(bus, LCD_RESET, 0, LCD_WIDTH, LCD_HEIGHT, 22, 0, 0, 0);
@@ -77,12 +82,13 @@ void setup() {
   if (touch_ready) FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE, FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
   else USBSerial.println("FT3168 unavailable; continuing without touch.");
   for (uint8_t attempt = 1; attempt <= 5 && !qmi_ready; ++attempt) {
-    qmi_ready = qmi.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+    qmi_ready = qmi.begin(Wire, QMI8658_BOARD_ADDRESS, IIC_SDA, IIC_SCL);
     if (!qmi_ready) { USBSerial.printf("QMI8658 initialization failed (%u/5)\n", attempt); delay(500); }
   }
   if (qmi_ready) {
-    qmi.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_1000Hz, SensorQMI8658::LPF_MODE_0);
+    qmi.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_125Hz, SensorQMI8658::LPF_MODE_0);
     qmi.enableAccelerometer();
+    USBSerial.printf("QMI8658 ready at 0x%02X\n", QMI8658_BOARD_ADDRESS);
   } else USBSerial.println("QMI8658 unavailable; continuing without accelerometer.");
   lv_init();
   lv_tick_set_cb(millis_cb);
@@ -124,11 +130,18 @@ void setup() {
 void loop() {
   if (!lvgl_ready) { delay(1000); return; }
   lv_task_handler();
-  if (qmi_ready && qmi.getDataReady() && qmi.getAccelerometer(acc.x, acc.y, acc.z) && chart && acc_series_x && acc_series_y && acc_series_z) {
-    USBSerial.printf("{ACCEL: %.3f,%.3f,%.3f}\n", acc.x, acc.y, acc.z);
-    lv_chart_set_next_value(chart, acc_series_x, (int32_t)lroundf(acc.x * 1000.0f));
-    lv_chart_set_next_value(chart, acc_series_y, (int32_t)lroundf(acc.y * 1000.0f));
-    lv_chart_set_next_value(chart, acc_series_z, (int32_t)lroundf(acc.z * 1000.0f));
+  const uint32_t now = millis();
+  if (qmi_ready && (uint32_t)(now - last_sensor_update_ms) >= SENSOR_UPDATE_INTERVAL_MS) {
+    last_sensor_update_ms = now;
+    if (qmi.getDataReady() && qmi.getAccelerometer(acc.x, acc.y, acc.z) && chart && acc_series_x && acc_series_y && acc_series_z) {
+      if ((uint32_t)(now - last_serial_log_ms) >= SERIAL_LOG_INTERVAL_MS) {
+        last_serial_log_ms = now;
+        USBSerial.printf("{ACCEL: %.3f,%.3f,%.3f}\n", acc.x, acc.y, acc.z);
+      }
+      lv_chart_set_next_value(chart, acc_series_x, (int32_t)lroundf(acc.x * 1000.0f));
+      lv_chart_set_next_value(chart, acc_series_y, (int32_t)lroundf(acc.y * 1000.0f));
+      lv_chart_set_next_value(chart, acc_series_z, (int32_t)lroundf(acc.z * 1000.0f));
+    }
   }
   delay(5);
 }
