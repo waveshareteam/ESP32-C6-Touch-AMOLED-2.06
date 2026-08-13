@@ -13,6 +13,7 @@
     ".github/scripts/test_ci_tools.py",
     "Flash-CI-Firmware.cmd",
     "config/ci-routing.json",
+    "config/toolchains.json",
     "releases/package_firmware.py",
     "scripts/Flash-CI-Firmware.ps1"
   ]

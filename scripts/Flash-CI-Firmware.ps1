@@ -21,12 +21,12 @@ $Items = @(
     [pscustomobject]@{ Index = 8; Workflow = 'esp-idf-examples.yml'; Artifact = 'firmware-esp-idf-04-qmi8658-v6.0.2'; Framework = 'esp-idf'; Version = 'v6.0.2' },
     [pscustomobject]@{ Index = 9; Workflow = 'esp-idf-examples.yml'; Artifact = 'firmware-esp-idf-05-spec-analyzer-v5.5.5'; Framework = 'esp-idf'; Version = 'v5.5.5' },
     [pscustomobject]@{ Index = 10; Workflow = 'esp-idf-examples.yml'; Artifact = 'firmware-esp-idf-05-spec-analyzer-v6.0.2'; Framework = 'esp-idf'; Version = 'v6.0.2' },
-    [pscustomobject]@{ Index = 11; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-01-helloworld-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' },
-    [pscustomobject]@{ Index = 12; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-02-gfx-asciitable-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' },
-    [pscustomobject]@{ Index = 13; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-03-lvgl-pcf85063-simpletime-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' },
-    [pscustomobject]@{ Index = 14; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-04-lvgl-qmi8658-ui-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' },
-    [pscustomobject]@{ Index = 15; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-05-lvgl-axp2101-adc-data-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' },
-    [pscustomobject]@{ Index = 16; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-06-lvgl-arduino-v9-3.3.11'; Framework = 'arduino-esp32'; Version = '3.3.11' }
+    [pscustomobject]@{ Index = 11; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-01-helloworld-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' },
+    [pscustomobject]@{ Index = 12; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-02-gfx-asciitable-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' },
+    [pscustomobject]@{ Index = 13; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-03-lvgl-pcf85063-simpletime-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' },
+    [pscustomobject]@{ Index = 14; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-04-lvgl-qmi8658-ui-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' },
+    [pscustomobject]@{ Index = 15; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-05-lvgl-axp2101-adc-data-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' },
+    [pscustomobject]@{ Index = 16; Workflow = 'arduino-examples.yml'; Artifact = 'firmware-arduino-06-lvgl-arduino-v9-3.3.8'; Framework = 'arduino-esp32'; Version = '3.3.8' }
 )
 $SourceProjects = @(
     'examples/esp-idf/01_AXP2101', 'examples/esp-idf/01_AXP2101', 'examples/esp-idf/02_lvgl_demo_v9', 'examples/esp-idf/02_lvgl_demo_v9',
