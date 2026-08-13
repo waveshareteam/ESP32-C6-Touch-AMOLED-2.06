@@ -10,7 +10,7 @@ build source; the committed factory image is not treated as a source-build targe
 | Workflow | First-party targets | Framework versions |
 | --- | ---: | --- |
 | `esp-idf-examples.yml` | 5 applications | ESP-IDF v5.5.5, v6.0.2 |
-| `arduino-examples.yml` | 6 sketches | Arduino-ESP32 3.3.11 |
+| `arduino-examples.yml` | 6 sketches | Arduino-ESP32 3.3.8 |
 
 Both workflows target ESP32-C6. The ESP-IDF matrix provides compatibility coverage
 for the latest stable 5.5 and 6.0 release lines. The Arduino workflow uses the
