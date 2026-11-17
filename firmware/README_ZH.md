@@ -2,8 +2,10 @@
 
 [English](README.md)
 
-`ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin` 是工厂提供的二进制镜像。
-本仓库按原样保留它；它不是由仓库示例构建产生的。
+| 文件 | 用途 |
+| --- | --- |
+| [ESP32-C6-Touch-AMOLED-2.06_FactoryOnly_20261029.bin](ESP32-C6-Touch-AMOLED-2.06_FactoryOnly_20261029.bin) | 2026-10-29 出厂恢复固件，从 `0x0` 烧录。 |
+| [ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin](ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin) | 此前提供的小智镜像。 |
 
 烧录前：
 

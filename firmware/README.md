@@ -2,8 +2,10 @@
 
 [简体中文](README_ZH.md)
 
-`ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin` is a factory-provided binary image.
-It is retained as supplied and is not produced from the examples in this repository.
+| File | Purpose |
+| --- | --- |
+| [ESP32-C6-Touch-AMOLED-2.06_FactoryOnly_20261029.bin](ESP32-C6-Touch-AMOLED-2.06_FactoryOnly_20261029.bin) | Factory recovery firmware, 2026-10-29. Flash at `0x0`. |
+| [ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin](ESP32-C6-Touch-AMOLED-2.06-xiaozhi-251028.bin) | Previously supplied XiaoZhi image. |
 
 Before flashing it:
 
