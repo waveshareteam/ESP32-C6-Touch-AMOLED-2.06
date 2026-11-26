@@ -7,7 +7,7 @@
 
 ## CI 开发板配置
 
-CI 使用 Arduino-ESP32 3.3.11 和以下 FQBN：
+CI 使用 Arduino-ESP32 3.3.8 和以下 FQBN：
 
 ```text
 esp32:esp32:esp32c6:CDCOnBoot=cdc,FlashSize=16M,PartitionScheme=app3M_fat9M_16MB

@@ -9,7 +9,7 @@ matrix.
 
 ## CI board configuration
 
-CI uses Arduino-ESP32 3.3.11 and this FQBN:
+CI uses Arduino-ESP32 3.3.8 and this FQBN:
 
 ```text
 esp32:esp32:esp32c6:CDCOnBoot=cdc,FlashSize=16M,PartitionScheme=app3M_fat9M_16MB

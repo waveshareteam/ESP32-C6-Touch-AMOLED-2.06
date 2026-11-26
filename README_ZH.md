@@ -100,7 +100,7 @@ flash.bat --port PORT
 | --- | --- | ---: |
 | ESP-IDF | `v5.5.5` | 5 |
 | ESP-IDF | `v6.0.2` | 5 |
-| Arduino-ESP32 | `3.3.11` | 6 |
+| Arduino-ESP32 | `3.3.8` | 6 |
 
 独立的 [ESP-IDF](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/esp-idf-examples.yml)
 与 [Arduino](https://github.com/waveshareteam/ESP32-C6-Touch-AMOLED-2.06/actions/workflows/arduino-examples.yml)

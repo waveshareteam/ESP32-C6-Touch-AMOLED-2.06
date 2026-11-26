@@ -180,6 +180,14 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(global_input.idf_examples, sorted(self.idf))
         self.assertEqual(global_input.arduino_examples, sorted(self.arduino))
 
+        toolchains_input = self.route(
+            router.Change("M", "config/toolchains.json")
+        )
+        self.assertTrue(toolchains_input.all_idf)
+        self.assertTrue(toolchains_input.all_arduino)
+        self.assertEqual(toolchains_input.idf_examples, sorted(self.idf))
+        self.assertEqual(toolchains_input.arduino_examples, sorted(self.arduino))
+
     def test_firmware_source_and_artifact_never_enter_example_ci(self) -> None:
         result = self.route(
             router.Change("M", "firmware/project/main/main.c"),
@@ -443,7 +451,7 @@ class PackageTests(unittest.TestCase):
             bundle = packager.package_arduino(
                 project,
                 build,
-                "3.3.11",
+                "3.3.8",
                 temporary / "out",
                 packager.DEFAULT_ARDUINO_FQBN,
             )
@@ -483,7 +491,7 @@ class PackageTests(unittest.TestCase):
                 packager.package_arduino(
                     project,
                     build,
-                    "3.3.11",
+                    "3.3.8",
                     temporary / "out",
                     packager.DEFAULT_ARDUINO_FQBN,
                 )
@@ -500,7 +508,7 @@ class PackageTests(unittest.TestCase):
                 packager.package_arduino(
                     project,
                     build,
-                    "3.3.11",
+                    "3.3.8",
                     temporary / "out",
                     packager.DEFAULT_ARDUINO_FQBN,
                 )

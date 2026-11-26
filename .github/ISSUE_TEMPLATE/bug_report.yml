@@ -34,7 +34,7 @@ body:
     id: version
     attributes:
       label: Framework version
-      placeholder: ESP-IDF v6.0.2 or Arduino-ESP32 3.3.11
+      placeholder: ESP-IDF v6.0.2 or Arduino-ESP32 3.3.8
     validations:
       required: true
 

@@ -10,7 +10,7 @@ GitHub Actions 是本仓库的构建验证权威。工作流构建源码；已�
 | 工作流 | 一方目标 | 框架版本 |
 | --- | ---: | --- |
 | `esp-idf-examples.yml` | 5 个应用 | ESP-IDF v5.5.5、v6.0.2 |
-| `arduino-examples.yml` | 6 个草图 | Arduino-ESP32 3.3.11 |
+| `arduino-examples.yml` | 6 个草图 | Arduino-ESP32 3.3.8 |
 
 两个工作流都以 ESP32-C6 为目标。ESP-IDF 矩阵覆盖最新稳定的 5.5 和 6.0
 版本线，Arduino 工作流使用本仓库记录的最新受支持稳定 core 基线。

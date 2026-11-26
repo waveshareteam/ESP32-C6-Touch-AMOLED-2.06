@@ -58,7 +58,7 @@ explicitly to Arduino CLI and does not compile the libraries' nested example tre
 
 The bundled Arduino_GFX 1.6.0 copy includes the upstream compatibility guard that
 skips an unused legacy SPI clock-divider call on Arduino-ESP32 3.3.6 and newer. This
-keeps the shipped library source compatible with the repository's 3.3.11 baseline.
+keeps the shipped library source compatible with the repository's 3.3.8 baseline.
 
 ## Update process
 
