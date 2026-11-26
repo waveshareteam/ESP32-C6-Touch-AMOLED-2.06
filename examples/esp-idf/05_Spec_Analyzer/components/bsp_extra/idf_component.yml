@@ -5,7 +5,7 @@ dependencies:
     version: ">=5.3.2"
 
   waveshare/esp32_c6_touch_amoled_2_06:
-    version: "^2.0.0"
+    version: "^2.0.1"
 
   chmorgan/esp-audio-player:
     version: "^1.1.0"
