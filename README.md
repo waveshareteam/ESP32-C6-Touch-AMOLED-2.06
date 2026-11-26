@@ -37,7 +37,7 @@ interfaces in a compact watch-style development platform.
 | Wireless | 2.4 GHz Wi-Fi 6, Bluetooth 5, Zigbee 3.0, and Thread |
 | Memory | 16 MB external flash |
 | Display | 2.06-inch 410 × 502 QSPI AMOLED using CO5300 |
-| Touch | FT3168 capacitive touch controller over I²C |
+| Touch | FT6146 (`0x38`) or CST820B (`0x15`), detected automatically over I²C |
 | Power management | AXP2101 with battery charging support |
 | Motion sensor | QMI8658 six-axis IMU |
 | Real-time clock | PCF85063 |
