@@ -35,7 +35,7 @@
 | 无线连接 | 2.4 GHz Wi-Fi 6、Bluetooth 5、Zigbee 3.0 和 Thread |
 | 存储 | 16 MB 外置 Flash |
 | 显示 | 2.06 英寸 410 × 502 QSPI AMOLED，CO5300 控制器 |
-| 触摸 | FT3168 电容触摸控制器，I²C 接口 |
+| 触摸 | FT6146（`0x38`）或 CST820B（`0x15`），通过 I²C 自动识别 |
 | 电源管理 | AXP2101，支持电池充电 |
 | 运动传感器 | QMI8658 六轴 IMU |
 | 实时时钟 | PCF85063 |

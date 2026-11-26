@@ -4,7 +4,7 @@
 #include "pin_config.h"
 #include <lvgl.h>
 #include "Arduino_GFX_Library.h"
-#include "Arduino_DriveBus_Library.h"
+#include "board_touch.h"
 #include "lv_conf.h"
 #include "SensorQMI8658.hpp"
 #include "HWCDC.h"
@@ -25,6 +25,7 @@ lv_chart_series_t *acc_series_x;
 lv_chart_series_t *acc_series_y;
 lv_chart_series_t *acc_series_z;
 bool lvgl_ready = false;
+BoardTouch touch;
 bool touch_ready = false;
 bool qmi_ready = false;
 SensorQMI8658 qmi;
@@ -34,11 +35,6 @@ uint32_t last_serial_log_ms = 0;
 
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
 Arduino_GFX *gfx = new Arduino_CO5300(bus, LCD_RESET, 0, LCD_WIDTH, LCD_HEIGHT, 22, 0, 0, 0);
-std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus = std::make_shared<Arduino_HWIIC>(IIC_SDA, IIC_SCL, &Wire);
-void Arduino_IIC_Touch_Interrupt(void);
-std::unique_ptr<Arduino_IIC> FT3168(new Arduino_FT3x68(IIC_Bus, FT3168_DEVICE_ADDRESS, DRIVEBUS_DEFAULT_VALUE, TP_INT, Arduino_IIC_Touch_Interrupt));
-
-void Arduino_IIC_Touch_Interrupt(void) { if (FT3168) FT3168->IIC_Interrupt_Flag = true; }
 uint32_t millis_cb(void) { return millis(); }
 void my_disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_map) {
   if (gfx && area && px_map) gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, lv_area_get_width(area), lv_area_get_height(area));
@@ -46,12 +42,14 @@ void my_disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *px_map
 }
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
   LV_UNUSED(indev);
-  data->state = LV_INDEV_STATE_REL;
-  if (!touch_ready || !FT3168 || !FT3168->IIC_Interrupt_Flag) return;
-  FT3168->IIC_Interrupt_Flag = false;
-  data->point.x = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
-  data->point.y = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
-  data->state = LV_INDEV_STATE_PR;
+  int16_t x, y;
+  if (touch.readPoint(x, y)) {
+    data->point.x = x;
+    data->point.y = y;
+    data->state = LV_INDEV_STATE_PR;
+  } else {
+    data->state = LV_INDEV_STATE_REL;
+  }
 }
 void rounder_event_cb(lv_event_t *e) {
   lv_area_t *area = (lv_area_t *)lv_event_get_param(e);
@@ -74,13 +72,17 @@ void setup() {
     return;
   }
   gfx->fillScreen(RGB565_BLACK);
-  Wire.begin(IIC_SDA, IIC_SCL);
-  for (uint8_t attempt = 1; FT3168 && attempt <= 5 && !touch_ready; ++attempt) {
-    touch_ready = FT3168->begin();
-    if (!touch_ready) { USBSerial.printf("FT3168 initialization failed (%u/5)\n", attempt); delay(500); }
+  const char *controller = nullptr;
+  for (uint8_t attempt = 1; attempt <= 5 && !controller; ++attempt) {
+    controller = touch.begin();
+    if (!controller && attempt < 5) delay(500);
   }
-  if (touch_ready) FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE, FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
-  else USBSerial.println("FT3168 unavailable; continuing without touch.");
+  touch_ready = controller != nullptr;
+  if (touch_ready) {
+    USBSerial.printf("Touch controller: %s\n", controller);
+  } else {
+    USBSerial.println("Touch unavailable; continuing without touch.");
+  }
   for (uint8_t attempt = 1; attempt <= 5 && !qmi_ready; ++attempt) {
     qmi_ready = qmi.begin(Wire, QMI8658_BOARD_ADDRESS, IIC_SDA, IIC_SCL);
     if (!qmi_ready) { USBSerial.printf("QMI8658 initialization failed (%u/5)\n", attempt); delay(500); }

@@ -4,7 +4,7 @@
 #include <lvgl.h>
 
 #include "Arduino_GFX_Library.h"
-#include "Arduino_DriveBus_Library.h"
+#include "board_touch.h"
 #include "lv_conf.h"
 #include <demos/lv_demos.h>
 
@@ -19,6 +19,8 @@ uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 bool lvgl_ready = false;
+BoardTouch touch;
+bool touch_ready = false;
 
 XPowersPMU power;
 
@@ -38,20 +40,6 @@ Arduino_GFX *gfx = new Arduino_CO5300(bus, LCD_RESET /* RST */,
                                       0 /* row_offset1 */,
                                       0 /* col_offset2 */,
                                       0 /* row_offset2 */);
-
-
-std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus =
-  std::make_shared<Arduino_HWIIC>(IIC_SDA, IIC_SCL, &Wire);
-
-void Arduino_IIC_Touch_Interrupt(void);
-
-std::unique_ptr<Arduino_IIC> FT3168(new Arduino_FT3x68(IIC_Bus, FT3168_DEVICE_ADDRESS,
-                                                       DRIVEBUS_DEFAULT_VALUE, TP_INT, Arduino_IIC_Touch_Interrupt));
-
-void Arduino_IIC_Touch_Interrupt(void) {
-  FT3168->IIC_Interrupt_Flag = true;
-}
-
 
 
 void adcOn() {
@@ -99,22 +87,13 @@ void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
 
 /*Read the touchpad*/
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
-  if (FT3168->IIC_Interrupt_Flag == true) {
-    FT3168->IIC_Interrupt_Flag = false;
-    int32_t touchX = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
-    int32_t touchY = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
-
+  LV_UNUSED(indev);
+  int16_t x, y;
+  if (touch.readPoint(x, y)) {
+    data->point.x = x;
+    data->point.y = y;
     data->state = LV_INDEV_STATE_PR;
-
-    /*Set the coordinates*/
-    data->point.x = touchX;
-    data->point.y = touchY;
-
-    USBSerial.print("Data x ");
-    USBSerial.print(touchX);
-
-    USBSerial.print("Data y ");
-    USBSerial.println(touchY);
+    USBSerial.printf("Data x %d Data y %d\n", x, y);
   } else {
     data->state = LV_INDEV_STATE_REL;
   }
@@ -156,17 +135,17 @@ void setup() {
   }
   gfx->fillScreen(RGB565_BLACK);
 
-  Wire.begin(IIC_SDA, IIC_SCL);
-
-  while (FT3168->begin() == false) {
-    USBSerial.println("FT3168 initialization fail");
-    delay(2000);
+  const char *controller = nullptr;
+  for (uint8_t attempt = 1; attempt <= 5 && !controller; ++attempt) {
+    controller = touch.begin();
+    if (!controller && attempt < 5) delay(500);
   }
-  USBSerial.println("FT3168 initialization successfully");
-
-  FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE,
-                                 FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
-
+  touch_ready = controller != nullptr;
+  if (touch_ready) {
+    USBSerial.printf("Touch controller: %s\n", controller);
+  } else {
+    USBSerial.println("Touch unavailable; continuing without touch.");
+  }
   if (!power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
     USBSerial.println("Failed to find AXP2101 - check your wiring!");
     while (1) {
@@ -234,9 +213,13 @@ void setup() {
     lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 
-    lv_indev_t *indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_read_cb(indev, my_touchpad_read);
+    if (touch_ready) {
+      lv_indev_t *indev = lv_indev_create();
+      if (indev) {
+        lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+        lv_indev_set_read_cb(indev, my_touchpad_read);
+      }
+    }
     lv_display_add_event_cb(disp, rounder_event_cb, LV_EVENT_INVALIDATE_AREA, NULL);
 
     // lv_obj_t *label = lv_label_create(lv_scr_act());
